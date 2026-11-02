@@ -110,13 +110,17 @@ def _extract_text(data: dict) -> str:
     return ""
 
 
-def call_llm(messages: list) -> str:
+def call_llm(messages: list):
+    """(응답 텍스트, 호출 출처 라벨) 반환"""
     key = get_key()
     if not key:
         raise RuntimeError("API 키가 없습니다. Streamlit Secrets에 `key`를 등록해 주세요.")
     headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
     errors = []
-    for url, extra in ((CHATBOT_URL, {}), (GATEWAY_URL, {"model": GATEWAY_MODEL})):
+    for url, extra, label in (
+        (CHATBOT_URL, {}, "chatbot 55975"),
+        (GATEWAY_URL, {"model": GATEWAY_MODEL}, f"gateway 대체 · {GATEWAY_MODEL}"),
+    ):
         try:
             r = requests.post(
                 url,
@@ -127,7 +131,7 @@ def call_llm(messages: list) -> str:
             if r.status_code == 200:
                 text = _extract_text(r.json())
                 if text.strip():
-                    return text
+                    return text, label
                 errors.append("빈 응답")
             else:
                 errors.append(f"HTTP {r.status_code}: {r.text[:200]}")
@@ -251,8 +255,8 @@ def run_analysis(text: str, target: str, keep: str):
         {"role": "system", "content": ANALYST_SYSTEM},
         {"role": "user", "content": f"{who}\n\n[대화 기록 시작]\n{body}\n[대화 기록 끝]"},
     ]
-    raw = call_llm(messages)
-    return parse_json(raw), raw
+    raw, src = call_llm(messages)
+    return parse_json(raw), raw, src
 
 
 # ───────────────────────── 화면 조각 ─────────────────────────
@@ -387,7 +391,7 @@ for k, v in (("stage", "input"), ("raw", ""), ("result", None), ("target", ""), 
 
 
 def reset():
-    for k in ("stage", "raw", "result", "target", "chat"):
+    for k in ("stage", "raw", "result", "target", "chat", "src"):
         st.session_state.pop(k, None)
 
 
@@ -461,7 +465,7 @@ elif st.session_state.stage == "pick":
     if b2.button("분석 시작", type="primary", use_container_width=True):
         with st.spinner("가면을 벗기는 중… 보통 1~3분 걸려요"):
             try:
-                result, raw_out = run_analysis(text, target.strip(), keep)
+                result, raw_out, src = run_analysis(text, target.strip(), keep)
             except Exception as ex:
                 st.error(f"분석 중 오류가 발생했어요: {ex}")
                 st.stop()
@@ -471,6 +475,7 @@ elif st.session_state.stage == "pick":
                 st.text(raw_out[:3000])
             st.stop()
         st.session_state.result = result
+        st.session_state.src = src
         st.session_state.target = target.strip()
         st.session_state.chat = []
         st.session_state.raw = ""  # 원문은 분석 직후 메모리에서 제거
@@ -482,6 +487,7 @@ else:
     r = st.session_state.result
     st.markdown(f"## 당신의 대화 원형{' — ' + e(st.session_state.target) if st.session_state.target else ''}")
     render_result(r)
+    st.markdown(f'<div style="text-align:right;color:#6b7280;font-size:.72rem">호출: {e(st.session_state.get("src", "-"))}</div>', unsafe_allow_html=True)
 
     st.download_button(
         "📥 리포트 저장 (.md)",
@@ -495,20 +501,26 @@ else:
     for m in st.session_state.chat:
         with st.chat_message(m["role"]):
             st.write(m["content"])
+            if m.get("src"):
+                st.caption(f"호출: {m['src']}")
     if q := st.chat_input("예) 이 성향으로 기획자와 연구자 중 어느 쪽이 맞을까요?"):
         st.session_state.chat.append({"role": "user", "content": q})
         with st.chat_message("user"):
             st.write(q)
         ctx = json.dumps(r, ensure_ascii=False)[:6000]
-        msgs = [{"role": "system", "content": CHAT_SYSTEM.format(ctx=ctx)}] + st.session_state.chat[-10:]
+        msgs = [{"role": "system", "content": CHAT_SYSTEM.format(ctx=ctx)}] + [
+            {"role": m["role"], "content": m["content"]} for m in st.session_state.chat[-10:]
+        ]
         with st.chat_message("assistant"):
             with st.spinner("생각 중…"):
                 try:
-                    ans = call_llm(msgs)
+                    ans, csrc = call_llm(msgs)
                 except Exception as ex:
-                    ans = f"답변을 가져오지 못했어요: {ex}"
+                    ans, csrc = f"답변을 가져오지 못했어요: {ex}", ""
             st.write(ans)
-        st.session_state.chat.append({"role": "assistant", "content": ans})
+            if csrc:
+                st.caption(f"호출: {csrc}")
+        st.session_state.chat.append({"role": "assistant", "content": ans, "src": csrc})
 
     if st.button("🔄 다시 분석하기", use_container_width=True):
         reset()
