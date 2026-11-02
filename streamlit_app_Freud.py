@@ -474,23 +474,15 @@ if st.session_state.stage == "input":
 # ───────────────────────── 2단계: 대상 선택 ─────────────────────────
 elif st.session_state.stage == "pick":
     text = st.session_state.raw
-    speakers = parse_speakers(text)
     st.markdown("## 누구를 분석할까요?")
-    st.caption(f"총 {len(text):,}자 · 대화자를 자동으로 찾았어요." if speakers else f"총 {len(text):,}자")
+    st.caption(f"총 {len(text):,}자")
 
     busy = st.session_state.get("busy", False)
-    target = ""
-    if speakers:
-        names = [f"{n}  ({c}줄)" for n, c in speakers.most_common(8)]
-        raw_names = [n for n, _ in speakers.most_common(8)]
-        choice = st.radio("분석 대상", names + ["직접 입력", "전체를 한 사람의 글로 보기"], index=0, disabled=busy)
-        if choice == "직접 입력":
-            target = st.text_input("대화에 나온 이름 그대로 입력", disabled=busy)
-        elif choice in names:
-            target = raw_names[names.index(choice)]
-    else:
-        st.info("대화자를 구분하지 못했어요. 전체 텍스트를 글쓴이 본인의 글로 보고 분석합니다.")
-        target = st.text_input("분석할 사람 이름 (비워 두면 전체 분석)", disabled=busy)
+    target = st.text_input(
+        "분석할 사람 이름 (대화에 나온 이름 그대로)",
+        placeholder="예: 세현  /  User  — 비워 두면 전체를 글쓴이 본인의 글로 보고 분석해요",
+        disabled=busy,
+    )
 
     keep = "recent"
     if len(text) > MAX_CHARS:
