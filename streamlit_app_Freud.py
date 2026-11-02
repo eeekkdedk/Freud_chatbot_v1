@@ -167,6 +167,9 @@ _NOT_NAMES = {
 }
 
 
+_USER_NAMES = {"user", "human", "you", "me", "사용자", "유저", "나", "본인", "질문자"}
+
+
 def looks_like_person(name: str) -> bool:
     """사람/화자 이름처럼 보이는지 (라벨·시간·문장 조각 제외)"""
     n = name.strip()
@@ -196,6 +199,10 @@ def parse_speakers(text: str):
     if best_i is None or sum(best_cnt.values()) < 2:
         return Counter()
     people = Counter({k: v for k, v in best_cnt.items() if looks_like_person(k)})
+    # 챗봇 로그처럼 'User'가 있으면 그 화자만 분석 대상으로 취급 (Assistant 등은 제외)
+    users = Counter({k: v for k, v in people.items() if k.strip().lower() in _USER_NAMES})
+    if users:
+        return users
     return people if sum(people.values()) >= 2 else Counter()
 
 
