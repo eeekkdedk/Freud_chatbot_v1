@@ -161,20 +161,20 @@ _PATTERNS = [
 
 
 def parse_speakers(text: str):
-    """(대화자 Counter, 사용된 패턴) 반환. 구분 불가 시 빈 Counter."""
+    """대화자 Counter. 구분 불가 시 빈 Counter. 한 줄만 말해도 대화자로 인정."""
     lines = text.splitlines()
-    best, best_cnt = None, Counter()
-    for pat in _PATTERNS:
+    best_i, best_cnt = None, Counter()
+    for i, pat in enumerate(_PATTERNS):
         cnt = Counter()
         for ln in lines:
             m = pat.match(ln.strip())
             if m:
                 cnt[m.group("n").strip()] += 1
         if sum(cnt.values()) > sum(best_cnt.values()):
-            best, best_cnt = pat, cnt
-    if best is None or sum(best_cnt.values()) < 5:
+            best_i, best_cnt = i, cnt
+    if best_i is None or sum(best_cnt.values()) < 2:
         return Counter()
-    return Counter({k: v for k, v in best_cnt.items() if v >= 3})
+    return Counter(best_cnt)
 
 
 def read_upload(f) -> str:
