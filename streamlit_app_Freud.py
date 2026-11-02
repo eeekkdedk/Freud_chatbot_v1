@@ -162,10 +162,9 @@ def parse_speakers(text: str):
 
 
 def count_utterances(text: str, speakers: Counter) -> int:
-    """말한 줄이 있으면 발화로 셉니다. 화자 표기가 잡히면 그 줄 수, 아니면 내용이 있는 줄 수."""
-    lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
-    matched = max(sum(1 for ln in lines if pat.match(ln)) for pat in _PATTERNS)
-    return matched if matched > 0 else len(lines)
+    if speakers:
+        return sum(speakers.values())
+    return sum(1 for ln in text.splitlines() if ln.strip())
 
 
 def read_upload(f) -> str:
