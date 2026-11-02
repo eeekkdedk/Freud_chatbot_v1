@@ -391,7 +391,7 @@ for k, v in (("stage", "input"), ("raw", ""), ("result", None), ("target", ""), 
 
 
 def reset():
-    for k in ("stage", "raw", "result", "target", "chat", "src"):
+    for k in ("stage", "raw", "result", "target", "chat", "src", "busy"):
         st.session_state.pop(k, None)
 
 
@@ -440,39 +440,54 @@ elif st.session_state.stage == "pick":
     st.markdown("## 누구를 분석할까요?")
     st.caption(f"총 {len(text):,}자 · 대화자를 자동으로 찾았어요." if speakers else f"총 {len(text):,}자")
 
+    busy = st.session_state.get("busy", False)
     target = ""
     if speakers:
         names = [f"{n}  ({c}줄)" for n, c in speakers.most_common(8)]
         raw_names = [n for n, _ in speakers.most_common(8)]
-        choice = st.radio("분석 대상", names + ["직접 입력", "전체를 한 사람의 글로 보기"], index=0)
+        choice = st.radio("분석 대상", names + ["직접 입력", "전체를 한 사람의 글로 보기"], index=0, disabled=busy)
         if choice == "직접 입력":
-            target = st.text_input("대화에 나온 이름 그대로 입력")
+            target = st.text_input("대화에 나온 이름 그대로 입력", disabled=busy)
         elif choice in names:
             target = raw_names[names.index(choice)]
     else:
         st.info("대화자를 구분하지 못했어요. 전체 텍스트를 글쓴이 본인의 글로 보고 분석합니다.")
-        target = st.text_input("분석할 사람 이름 (비워 두면 전체 분석)")
+        target = st.text_input("분석할 사람 이름 (비워 두면 전체 분석)", disabled=busy)
 
     keep = "recent"
     if len(text) > MAX_CHARS:
         st.warning(f"대화가 {MAX_CHARS:,}자를 넘어요. 일부만 분석할 수 있어요.")
-        keep = "recent" if st.radio("어느 부분을 쓸까요?", ["최근 대화 위주 (앞부분 제거)", "초반 대화 위주 (뒷부분 제거)"]).startswith("최근") else "early"
+        keep = "recent" if st.radio("어느 부분을 쓸까요?", ["최근 대화 위주 (앞부분 제거)", "초반 대화 위주 (뒷부분 제거)"], disabled=busy).startswith("최근") else "early"
 
     b1, b2 = st.columns([1, 2])
-    if b1.button("← 뒤로", use_container_width=True):
+    if b1.button("← 뒤로", use_container_width=True, disabled=busy):
         st.session_state.stage = "input"
         st.rerun()
-    if b2.button("분석 시작", type="primary", use_container_width=True):
+    b2.button(
+        "분석 중…" if busy else "분석 시작",
+        type="primary",
+        use_container_width=True,
+        disabled=busy,
+        on_click=lambda: st.session_state.update(busy=True),
+    )
+
+    if busy:  # 버튼이 잠긴 상태로 분석 실행
         with st.spinner("가면을 벗기는 중… 보통 1~3분 걸려요"):
             try:
                 result, raw_out, src = run_analysis(text, target.strip(), keep)
             except Exception as ex:
+                st.session_state.busy = False
                 st.error(f"분석 중 오류가 발생했어요: {ex}")
+                if st.button("다시 시도"):
+                    st.rerun()
                 st.stop()
+        st.session_state.busy = False
         if result is None:
             st.error("결과 형식을 해석하지 못했어요. 다시 시도해 주세요.")
             with st.expander("원본 응답 보기"):
                 st.text(raw_out[:3000])
+            if st.button("다시 시도"):
+                st.rerun()
             st.stop()
         st.session_state.result = result
         st.session_state.src = src
