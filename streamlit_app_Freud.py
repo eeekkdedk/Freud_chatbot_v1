@@ -480,7 +480,7 @@ elif st.session_state.stage == "pick":
     busy = st.session_state.get("busy", False)
     target = st.text_input(
         "분석할 사람 이름 (대화에 나온 이름 그대로)",
-        placeholder="예: 세현  /  User  — 비워 두면 전체를 글쓴이 본인의 글로 보고 분석해요",
+        placeholder="예: 홍길동  — 비워 두면 전체를 글쓴이 본인의 글로 보고 분석해요",
         disabled=busy,
     )
 
