@@ -160,6 +160,27 @@ _PATTERNS = [
 ]
 
 
+_NOT_NAMES = {
+    "시간", "날짜", "일시", "장소", "제목", "내용", "주의", "참고", "결과", "요약", "질문", "답변", "예시", "예", "단계", "방법",
+    "문제", "정답", "해설", "비고", "출처", "링크", "주소", "전화", "연락처", "이메일", "메모", "공지", "알림", "안내",
+    "저장한 날짜", "대화", "채팅", "카카오톡", "총", "합계", "note", "notes", "time", "date", "title", "link", "http", "https",
+}
+
+
+def looks_like_person(name: str) -> bool:
+    """사람/화자 이름처럼 보이는지 (라벨·시간·문장 조각 제외)"""
+    n = name.strip()
+    if not (1 <= len(n) <= 20) or n.lower() in _NOT_NAMES:
+        return False
+    if re.fullmatch(r"[\d\s\-./:~]+", n) or re.search(r"\d{1,2}:\d{2}|\d{4}[-./년]", n):  # 숫자·날짜·시간
+        return False
+    if re.search(r"[?!,()<>\[\]{}=/\\|*#@]|https?|\.\w{2,4}$", n):  # 문장부호·URL·파일명
+        return False
+    if re.search(r"(했|는데|이다|입니다|해요|니까|습니다)$", n):  # 문장 끝 어미
+        return False
+    return True
+
+
 def parse_speakers(text: str):
     """대화자 Counter. 구분 불가 시 빈 Counter. 한 줄만 말해도 대화자로 인정."""
     lines = text.splitlines()
@@ -174,7 +195,8 @@ def parse_speakers(text: str):
             best_i, best_cnt = i, cnt
     if best_i is None or sum(best_cnt.values()) < 2:
         return Counter()
-    return Counter(best_cnt)
+    people = Counter({k: v for k, v in best_cnt.items() if looks_like_person(k)})
+    return people if sum(people.values()) >= 2 else Counter()
 
 
 def read_upload(f) -> str:
