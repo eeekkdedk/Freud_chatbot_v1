@@ -58,7 +58,7 @@ st.markdown(
 html, body, [class*="css"], .stApp { font-family: 'Pretendard', -apple-system, sans-serif; }
 .block-container { max-width: 760px; padding-top: 2.2rem; }
 .hero { text-align:center; padding: 2.2rem 0 1.2rem; }
-.hero .brand { letter-spacing: .5em; font-size: .8rem; color:#a78bfa; font-weight:700; }
+.hero .brand { letter-spacing: .4em; font-size: 2.6rem; color:#a78bfa; font-weight:800; margin-bottom:.4rem; }
 .hero h1 { font-size: 2.3rem; line-height:1.25; margin:.6rem 0 .5rem; font-weight:800; }
 .hero .sub { color:#9ca3af; font-size:1rem; }
 .hero .desc { color:#cbd5e1; font-size:.95rem; margin-top:1rem; line-height:1.7; }
