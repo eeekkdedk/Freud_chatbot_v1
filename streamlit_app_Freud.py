@@ -167,6 +167,11 @@ _NOT_NAMES = {
 }
 
 
+_LABEL_WORDS = (
+    "요약", "이유", "원인", "이론", "방안", "모델", "활용", "결론", "목적", "방법", "설명", "정리", "내용", "질문", "답변",
+    "도움", "문제", "해결", "예시", "참고", "특징", "장점", "단점", "의미", "개념", "정의", "목표", "계획", "분석", "추천",
+    "summary", "reason", "cause", "theory", "model", "answer", "question", "result", "example",
+)
 _USER_NAMES = {"user", "human", "you", "me", "사용자", "유저", "나", "본인", "질문자"}
 
 
@@ -180,6 +185,10 @@ def looks_like_person(name: str) -> bool:
     if re.search(r"[?!,()<>\[\]{}=/\\|*#@]|https?|\.\w{2,4}$", n):  # 문장부호·URL·파일명
         return False
     if re.search(r"(했|는데|이다|입니다|해요|니까|습니다)$", n):  # 문장 끝 어미
+        return False
+    if re.search(r"(된다|한다|있다|없다|같다|이다|하다|이 됨|함|임)$", n):  # 서술형 끝
+        return False
+    if any(w in n for w in _LABEL_WORDS):  # 요약·이유·원인 같은 항목 라벨
         return False
     return True
 
