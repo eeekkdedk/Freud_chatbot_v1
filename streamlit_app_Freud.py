@@ -268,11 +268,6 @@ def hero():
 """,
         unsafe_allow_html=True,
     )
-    chips = "".join(
-        f'<div class="chip"><div class="em">{em}</div><div class="nm">{ko}</div><div class="en">{en}</div></div>'
-        for em, ko, en, _ in ARCHETYPES.values()
-    )
-    st.markdown(f'<div class="sec">12 ARCHETYPES</div><div class="grid">{chips}</div>', unsafe_allow_html=True)
 
 
 def terms_box():
