@@ -185,18 +185,22 @@ def call_llm(messages: list):
             if r.status_code == 200:
                 text = _extract_text(r.json())
                 if text.strip():
+                    if errors:  # 앞선 경로가 실패해 대체로 성공한 경우: 실패 사유를 라벨에 남겨 원인 파악
+                        label += f" ← 앞 경로 실패: {errors[0][:220]}"
                     return text, label
                 errors.append(f"{label}: 빈 응답")
             elif r.status_code == 403 and url == CHATBOT_URL:
-                errors.append(f"{label}: 403 — 챗쿠 스튜디오에서 해당 챗봇의 공유 > API 탭 'API 접근' 토글을 켜야 해요")
+                errors.append(f"{label}: 403 — 챗쿠 스튜디오에서 해당 챗봇의 공유 > API 탭 'API 접근' 토글을 켜야 해요 · 서버 응답: {r.text[:120]}")
             elif r.status_code == 404 and url == CHATBOT_URL:
-                errors.append(f"{label}: 404 — 챗봇 ID 또는 소속 조직이 맞는지 확인")
+                errors.append(f"{label}: 404 — 챗봇 ID 또는 소속 조직이 맞는지 확인 · 서버 응답: {r.text[:120]}")
             elif r.status_code == 401:
-                errors.append(f"{label}: 401 인증 실패 — API 키를 확인하세요(발급받은 서버의 키인지도 확인)")
+                errors.append(f"{label}: 401 인증 실패 — API 키를 확인하세요(발급받은 서버의 키인지도 확인) · 서버 응답: {r.text[:120]}")
             else:
                 errors.append(f"{label}: HTTP {r.status_code} {r.text[:150]}")
         except Exception as ex:  # 네트워크/타임아웃/JSON 오류
             errors.append(f"{label}: {type(ex).__name__} {str(ex)[:120]}")
+        if errors:
+            print(f"[freud-llm] {errors[-1]}", flush=True)  # Streamlit Cloud > Manage app > 로그에서 확인
     raise RuntimeError(" | ".join(errors))
 
 
