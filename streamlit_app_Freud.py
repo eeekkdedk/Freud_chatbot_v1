@@ -31,69 +31,69 @@ st.markdown(
 html, body, [class*="css"], .stApp { font-family: 'Pretendard', -apple-system, sans-serif; }
 .block-container { max-width: 760px; padding-top: 2.2rem; }
 .hero { text-align:center; padding: 2.2rem 0 1.2rem; }
-.hero .brand { letter-spacing: .4em; font-size: 2.6rem; color:#a78bfa; font-weight:800; margin-bottom:.4rem; }
+.hero .brand { letter-spacing: .4em; font-size: 2.6rem; color:#A40F16; font-weight:800; margin-bottom:.4rem; }
 .hero h1 { font-size: 2.3rem; line-height:1.25; margin:.6rem 0 .5rem; font-weight:800; }
-.hero .sub { color:#9ca3af; font-size:1rem; }
-.hero .desc { color:#cbd5e1; font-size:.95rem; margin-top:1rem; line-height:1.7; }
+.hero .sub { color:#717171; font-size:1rem; }
+.hero .desc { color:#3f4450; font-size:.95rem; margin-top:1rem; line-height:1.7; }
 .grid { display:grid; grid-template-columns: repeat(4, 1fr); gap:.6rem; margin:1rem 0 1.6rem; }
-.chip { background:#171a23; border:1px solid #262b3a; border-radius:12px; padding:.8rem .3rem; text-align:center; }
-.chip .em { font-size:1.5rem; } .chip .nm { font-size:.82rem; color:#cbd5e1; margin-top:.2rem; font-weight:600; }
-.chip .en { font-size:.6rem; color:#6b7280; letter-spacing:.12em; }
-.sec { font-size:.75rem; letter-spacing:.3em; color:#a78bfa; font-weight:700; margin:1.8rem 0 .4rem; }
-.arche { background:linear-gradient(160deg,#1c1633,#12141d); border:1px solid #3b2f6b; border-radius:20px; padding:2rem 1.4rem; text-align:center; margin:1rem 0; }
-.arche .em { font-size:3.4rem; } .arche .en { letter-spacing:.35em; color:#a78bfa; font-size:.75rem; margin-top:.4rem; }
-.arche .nm { font-size:1.8rem; font-weight:800; margin:.2rem 0; } .arche .tag { color:#c4b5fd; font-style:italic; }
-.arche .sum { color:#d1d5db; line-height:1.75; margin-top:1rem; text-align:left; font-size:.96rem; }
+.chip { background:#f6f6f8; border:1px solid #e3e3e6; border-radius:12px; padding:.8rem .3rem; text-align:center; }
+.chip .em { font-size:1.5rem; } .chip .nm { font-size:.82rem; color:#3f4450; margin-top:.2rem; font-weight:600; }
+.chip .en { font-size:.6rem; color:#717171; letter-spacing:.12em; }
+.sec { font-size:.75rem; letter-spacing:.3em; color:#A40F16; font-weight:700; margin:1.8rem 0 .4rem; }
+.arche { background:linear-gradient(160deg,#fbf7ec,#ffffff); border:1px solid #C0A353; border-radius:20px; padding:2rem 1.4rem; text-align:center; margin:1rem 0; }
+.arche .em { font-size:3.4rem; } .arche .en { letter-spacing:.35em; color:#A40F16; font-size:.75rem; margin-top:.4rem; }
+.arche .nm { font-size:1.8rem; font-weight:800; margin:.2rem 0; } .arche .tag { color:#0D326F; font-style:italic; }
+.arche .sum { color:#444b57; line-height:1.75; margin-top:1rem; text-align:left; font-size:.96rem; }
 .bar { margin:.7rem 0; } .bar .top { display:flex; justify-content:space-between; font-size:.9rem; }
-.bar .track { height:8px; background:#232838; border-radius:6px; margin:.3rem 0; overflow:hidden; }
-.bar .fill { height:100%; background:linear-gradient(90deg,#7c3aed,#c084fc); border-radius:6px; }
-.bar .cm { color:#9ca3af; font-size:.82rem; line-height:1.55; }
-.card { background:#151824; border:1px solid #262b3a; border-radius:14px; padding:1rem 1.1rem; margin:.6rem 0; }
-.card h4 { margin:0 0 .3rem; font-size:1rem; } .card p { margin:.2rem 0; color:#cbd5e1; font-size:.9rem; line-height:1.65; }
-.card .ev { color:#9ca3af; font-size:.82rem; border-left:3px solid #4c3a8f; padding-left:.6rem; margin-top:.4rem; }
-.disc { color:#6b7280; font-size:.78rem; line-height:1.6; margin-top:2rem; border-top:1px solid #262b3a; padding-top:1rem; }
-.wait { text-align:center; background:linear-gradient(160deg,#1c1633,#12141d); border:1px solid #3b2f6b; border-radius:18px; padding:1.8rem 1.2rem; margin:1rem 0; }
+.bar .track { height:8px; background:#e8e8ec; border-radius:6px; margin:.3rem 0; overflow:hidden; }
+.bar .fill { height:100%; background:linear-gradient(90deg,#0D326F,#C0A353); border-radius:6px; }
+.bar .cm { color:#717171; font-size:.82rem; line-height:1.55; }
+.card { background:#f6f6f8; border:1px solid #e3e3e6; border-radius:14px; padding:1rem 1.1rem; margin:.6rem 0; }
+.card h4 { margin:0 0 .3rem; font-size:1rem; } .card p { margin:.2rem 0; color:#3f4450; font-size:.9rem; line-height:1.65; }
+.card .ev { color:#717171; font-size:.82rem; border-left:3px solid #C0A353; padding-left:.6rem; margin-top:.4rem; }
+.disc { color:#717171; font-size:.78rem; line-height:1.6; margin-top:2rem; border-top:1px solid #e3e3e6; padding-top:1rem; }
+.wait { text-align:center; background:linear-gradient(160deg,#fbf7ec,#ffffff); border:1px solid #C0A353; border-radius:18px; padding:1.8rem 1.2rem; margin:1rem 0; }
 .wait .em { font-size:2.8rem; animation:bob 1.6s ease-in-out infinite; }
-.wait .ln { font-size:1.05rem; font-weight:600; line-height:1.6; margin-top:.5rem; color:#e5e7eb; }
-.wait .tm { color:#6b7280; font-size:.75rem; margin-top:.8rem; }
+.wait .ln { font-size:1.05rem; font-weight:600; line-height:1.6; margin-top:.5rem; color:#1f2430; }
+.wait .tm { color:#717171; font-size:.75rem; margin-top:.8rem; }
 @keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
 .fnd { padding:1.3rem 1.3rem 1.1rem; }
-.fnd .qt { font-size:1.45rem; font-weight:800; line-height:1.45; color:#f3f0ff; border-left:4px solid #8b5cf6; padding-left:.8rem; margin-bottom:.7rem; word-break:keep-all; }
-.fnd h4 { font-size:1.02rem; color:#c4b5fd; margin:.1rem 0 .5rem; }
+.fnd .qt { font-size:1.45rem; font-weight:800; line-height:1.45; color:#0D326F; border-left:4px solid #A40F16; padding-left:.8rem; margin-bottom:.7rem; word-break:keep-all; }
+.fnd h4 { font-size:1.02rem; color:#A40F16; margin:.1rem 0 .5rem; }
 .nav { display:flex; align-items:center; justify-content:space-between; padding:.2rem 0 .6rem; }
-.nav .logo { font-weight:800; letter-spacing:.3em; color:#a78bfa; font-size:1.05rem; }
-.nav .pill { font-size:.72rem; color:#9ca3af; border:1px solid #262b3a; border-radius:999px; padding:.2rem .7rem; }
+.nav .logo { font-weight:800; letter-spacing:.3em; color:#A40F16; font-size:1.05rem; }
+.nav .pill { font-size:.72rem; color:#717171; border:1px solid #e3e3e6; border-radius:999px; padding:.2rem .7rem; }
 .lp-hero { text-align:center; padding:1.6rem 0 .6rem; }
 .lp-hero .couch { font-size:3.6rem; line-height:0; }
-.lp-hero .mascot { height:210px; width:auto; filter:drop-shadow(0 8px 18px rgba(139,92,246,.35)); animation:bob 3s ease-in-out infinite; }
+.lp-hero .mascot { height:360px; max-width:80%; object-fit:contain; width:auto; filter:drop-shadow(0 8px 18px rgba(164,15,22,.22)); animation:bob 3s ease-in-out infinite; }
 .lp-hero h1 { font-size:2.5rem; line-height:1.25; font-weight:800; margin:.5rem 0 .7rem; }
-.lp-hero h1 em { font-style:normal; background:linear-gradient(90deg,#a78bfa,#f0abfc); -webkit-background-clip:text; background-clip:text; color:transparent; }
-.lp-hero .sub { color:#9ca3af; font-size:1.02rem; line-height:1.7; }
-.lp-src { text-align:center; color:#6b7280; font-size:.78rem; margin:.6rem 0 0; }
-.lp-src span { display:inline-block; background:#171a23; border:1px solid #262b3a; border-radius:999px; padding:.2rem .7rem; margin:.15rem .1rem; color:#cbd5e1; }
+.lp-hero h1 em { font-style:normal; background:linear-gradient(90deg,#A40F16,#d4553a); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.lp-hero .sub { color:#717171; font-size:1.02rem; line-height:1.7; }
+.lp-src { text-align:center; color:#717171; font-size:.78rem; margin:.6rem 0 0; }
+.lp-src span { display:inline-block; background:#f6f6f8; border:1px solid #e3e3e6; border-radius:999px; padding:.2rem .7rem; margin:.15rem .1rem; color:#3f4450; }
 .marq { overflow:hidden; margin:.4rem -1rem 0; -webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent); mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent); }
 .marq .track2 { display:flex; gap:.8rem; width:max-content; animation:scroll 38s linear infinite; }
 .marq:hover .track2 { animation-play-state:paused; }
 @keyframes scroll { from{transform:translateX(0)} to{transform:translateX(-50%)} }
-.pv { width:250px; flex:none; background:#151824; border:1px solid #262b3a; border-radius:16px; padding:.9rem 1rem; }
-.pv .tg { font-size:.7rem; color:#c4b5fd; background:#241d44; border-radius:999px; padding:.1rem .55rem; display:inline-block; }
-.pv .bb { margin-top:.6rem; font-size:.85rem; color:#e5e7eb; background:#1d2130; border-radius:12px 12px 12px 3px; padding:.5rem .7rem; line-height:1.5; }
-.pv .bb.me { background:#3b2f6b; border-radius:12px 12px 3px 12px; margin-left:1.4rem; }
-.pv .rd { margin-top:.6rem; font-size:.78rem; color:#9ca3af; border-top:1px dashed #2b3144; padding-top:.5rem; line-height:1.5; }
-.pv .rd b { color:#c4b5fd; }
-.eg { text-align:center; color:#6b7280; font-size:.72rem; margin-top:.4rem; }
+.pv { width:250px; flex:none; background:#f6f6f8; border:1px solid #e3e3e6; border-radius:16px; padding:.9rem 1rem; }
+.pv .tg { font-size:.7rem; color:#0D326F; background:#e8edf6; border-radius:999px; padding:.1rem .55rem; display:inline-block; }
+.pv .bb { margin-top:.6rem; font-size:.85rem; color:#1f2430; background:#eef0f4; border-radius:12px 12px 12px 3px; padding:.5rem .7rem; line-height:1.5; }
+.pv .bb.me { background:#0D326F; color:#fff; border-radius:12px 12px 3px 12px; margin-left:1.4rem; }
+.pv .rd { margin-top:.6rem; font-size:.78rem; color:#717171; border-top:1px dashed #d6d6da; padding-top:.5rem; line-height:1.5; }
+.pv .rd b { color:#0D326F; }
+.eg { text-align:center; color:#717171; font-size:.72rem; margin-top:.4rem; }
 .steps { display:grid; grid-template-columns:repeat(3,1fr); gap:.7rem; margin:.6rem 0; }
-.step { background:#151824; border:1px solid #262b3a; border-radius:14px; padding:1rem .9rem; }
-.step .n { color:#a78bfa; font-weight:800; font-size:.75rem; letter-spacing:.2em; }
-.step .t { font-weight:700; margin:.3rem 0 .2rem; } .step .d { color:#9ca3af; font-size:.85rem; line-height:1.6; }
+.step { background:#f6f6f8; border:1px solid #e3e3e6; border-radius:14px; padding:1rem .9rem; }
+.step .n { color:#A40F16; font-weight:800; font-size:.75rem; letter-spacing:.2em; }
+.step .t { font-weight:700; margin:.3rem 0 .2rem; } .step .d { color:#717171; font-size:.85rem; line-height:1.6; }
 .feat { display:grid; grid-template-columns:repeat(2,1fr); gap:.7rem; margin:.6rem 0; }
 .feat .card { margin:0; }
-.sechead { text-align:center; font-size:1.5rem; font-weight:800; margin:2.2rem 0 .3rem; }
-.sechead + .secsub { text-align:center; color:#9ca3af; font-size:.9rem; margin-bottom:.8rem; }
-.lp-cta { text-align:center; background:linear-gradient(160deg,#1c1633,#12141d); border:1px solid #3b2f6b; border-radius:20px; padding:2rem 1rem 1.2rem; margin-top:2.2rem; }
-.lp-cta h2 { font-size:1.7rem; font-weight:800; margin:0 0 .3rem; } .lp-cta p { color:#9ca3af; margin:0 0 .6rem; }
-.foot { color:#6b7280; font-size:.75rem; line-height:1.7; text-align:center; margin-top:2rem; padding-top:1rem; border-top:1px solid #262b3a; }
-@media (max-width:640px){ .grid{ grid-template-columns: repeat(3,1fr);} .hero h1{font-size:1.8rem;} .lp-hero h1{font-size:1.9rem;} .steps,.feat{grid-template-columns:1fr;} }
+.sechead { color:#0D326F; text-align:center; font-size:1.5rem; font-weight:800; margin:2.2rem 0 .3rem; }
+.sechead + .secsub { text-align:center; color:#717171; font-size:.9rem; margin-bottom:.8rem; }
+.lp-cta { text-align:center; background:linear-gradient(160deg,#fbf7ec,#ffffff); border:1px solid #C0A353; border-radius:20px; padding:2rem 1rem 1.2rem; margin-top:2.2rem; }
+.lp-cta h2 { font-size:1.7rem; font-weight:800; margin:0 0 .3rem; } .lp-cta p { color:#717171; margin:0 0 .6rem; }
+.foot { color:#717171; font-size:.75rem; line-height:1.7; text-align:center; margin-top:2rem; padding-top:1rem; border-top:1px solid #e3e3e6; }
+@media (max-width:640px){ .lp-hero .mascot{height:300px;} .grid{ grid-template-columns: repeat(3,1fr);} .hero h1{font-size:1.8rem;} .lp-hero h1{font-size:1.9rem;} .steps,.feat{grid-template-columns:1fr;} }
 </style>
 """,
     unsafe_allow_html=True,
@@ -389,7 +389,7 @@ def run_analysis(text: str, target: str, keep: str):
 # ───────────────────────── 분석 중 멘트 (프로이트 명언 모티브) ─────────────────────────
 # 실제 명언을 귀엽게 풀어 쓴 문구예요. (직접 인용 아님)
 WAIT_LINES = [
-    ("🛋️", "소파에 편하게 누우세요~ 프로이트 박사가 진료 시작합니다"),
+    ("🛋️", "소파에 편하게 누우세요~ 쿠로이트 박사가 진료 시작합니다"),
     ("🌊", "“꿈은 무의식으로 가는 왕도다” 라고 하셨죠. 말투 속 지름길을 걷는 중…"),
     ("🧊", "마음은 빙산! 물 위 한 조각 말고 물속 아래쪽을 살펴보는 중이에요"),
     ("🫣", "“비밀은 입이 아니라 온몸으로 새어 나온다” 했거든요. 말버릇에서 단서 줍는 중…"),
@@ -439,7 +439,7 @@ def run_with_freud_quotes(text: str, target: str, keep: str):
         sec = int(time.time() - t0)
         slot.markdown(
             f'<div class="wait"><div class="em">{em}</div><div class="ln">{e(line)}</div>'
-            f'<div class="tm">프로이트 박사가 분석 중… {sec}초 · 보통 1~3분 걸려요</div></div>',
+            f'<div class="tm">쿠로이트가 분석 중… {sec}초 · 보통 1~3분 걸려요</div></div>',
             unsafe_allow_html=True,
         )
         th.join(1.0)
@@ -500,7 +500,7 @@ def landing():
 <div class="nav"><div class="logo">F R E U D</div><div class="pill">대화 속 무의식 분석 · 베타</div></div>
 <div class="lp-hero">
 <div class="couch">{MASCOT}</div>
-<h1>대화 올려 봐요.<br><em>진짜 마음</em>이 뭔지 프로이트가 말해 줄게요.</h1>
+<h1>대화 올려 봐요.<br><em>진짜 마음</em>이 뭔지 쿠로이트가 알려줄게요.</h1>
 <div class="sub">카톡·SNS·챗봇 대화를 읽고<br>말버릇과 방어기제, 반복되는 패턴을 찾아<br>나에게 맞는 진로의 실마리까지 제안해요.</div>
 </div>
 """.replace("{MASCOT}", _mascot_html()),
@@ -626,7 +626,7 @@ def render_result(r: dict):
             continue
         for f in finds:
             conf = txt(f.get("confidence"))
-            badge = f' <span style="color:#9ca3af;font-size:.75rem">확신도 {e(conf)}</span>' if conf else ""
+            badge = f' <span style="color:#717171;font-size:.75rem">확신도 {e(conf)}</span>' if conf else ""
             evt = txt(f.get("evidence"))
             quote = f'<div class="qt">“{e(evt)}”</div>' if evt else ""
             st.markdown(
@@ -815,7 +815,7 @@ else:
     r = st.session_state.result
     st.markdown(f"## 당신의 대화 원형{' — ' + e(st.session_state.target) if st.session_state.target else ''}")
     render_result(r)
-    st.markdown(f'<div style="text-align:right;color:#6b7280;font-size:.72rem">호출: {e(st.session_state.get("src", "-"))}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="text-align:right;color:#717171;font-size:.72rem">호출: {e(st.session_state.get("src", "-"))}</div>', unsafe_allow_html=True)
 
     st.download_button(
         "📥 리포트 저장 (.md)",
