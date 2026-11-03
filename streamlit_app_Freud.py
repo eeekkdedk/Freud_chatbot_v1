@@ -15,11 +15,12 @@ import streamlit as st
 # ───────────────────────── 설정 ─────────────────────────
 # ChatKHU(경희대 생성형 AI 플랫폼) API Gateway — OpenAI SDK 호환 (base_url 아래 /chat/completions)
 GATEWAY_BASE = "https://factchat-cloud.mindlogic.ai/v1/gateway"
-GATEWAY_URL = f"{GATEWAY_BASE}/chat/completions"
+GATEWAY_URL = f"{GATEWAY_BASE}/chat/completions/"
 DEFAULT_MODEL = "gpt-5.6-luna"  # Secrets에 `model = "..."`을 넣으면 코드 수정 없이 교체 가능
-CHATBOT_URL = f"{GATEWAY_BASE}/chatbots/55975/chat/completions"  # 챗쿠에서 만든 챗봇 (먼저 호출)
+CHATBOT_URL = f"{GATEWAY_BASE}/chatbots/55975/chat/completions/"  # 챗쿠에서 만든 챗봇 (먼저 호출)
 CONNECT_TIMEOUT = 10
 READ_TIMEOUT = 180
+GATEWAY_MAX_TOKENS = 16000  # 추론 모델은 이보다 낮으면 빈 응답(200)이 올 수 있음
 RETRY_STATUS = {429, 500, 502, 503, 504}
 
 MIN_CHARS = 300
@@ -155,6 +156,17 @@ def _post_with_retry(url: str, headers: dict, payload: dict):
     raise last
 
 
+def _fold_system(messages: list) -> list:
+    """챗봇 엔드포인트는 system 메시지를 무시하므로, system 내용을 첫 user 메시지 앞에 합친다."""
+    sys_txt = "\n\n".join(m["content"] for m in messages if m["role"] == "system")
+    rest = [dict(m) for m in messages if m["role"] != "system"]
+    if sys_txt and rest and rest[0]["role"] == "user":
+        rest[0]["content"] = f"[지침]\n{sys_txt}\n\n[요청]\n{rest[0]['content']}"
+    elif sys_txt:
+        rest.insert(0, {"role": "user", "content": sys_txt})
+    return rest
+
+
 def call_llm(messages: list):
     """(응답 텍스트, 호출 출처 라벨) 반환. 챗쿠 챗봇 엔드포인트 → 게이트웨이(모델 직접 호출) 순으로 시도."""
     key = get_key()
@@ -165,15 +177,20 @@ def call_llm(messages: list):
     errors = []
     for url, extra, label in (
         (CHATBOT_URL, {}, "chatbot 55975"),
-        (GATEWAY_URL, {"model": model}, f"gateway 대체 · {model}"),
+        (GATEWAY_URL, {"model": model, "max_tokens": GATEWAY_MAX_TOKENS}, f"gateway 대체 · {model}"),
     ):
         try:
-            r = _post_with_retry(url, headers, {"messages": messages, "stream": False, **extra})
+            msgs = _fold_system(messages) if url == CHATBOT_URL else messages
+            r = _post_with_retry(url, headers, {"messages": msgs, "stream": False, **extra})
             if r.status_code == 200:
                 text = _extract_text(r.json())
                 if text.strip():
                     return text, label
                 errors.append(f"{label}: 빈 응답")
+            elif r.status_code == 403 and url == CHATBOT_URL:
+                errors.append(f"{label}: 403 — 챗쿠 스튜디오에서 해당 챗봇의 공유 > API 탭 'API 접근' 토글을 켜야 해요")
+            elif r.status_code == 404 and url == CHATBOT_URL:
+                errors.append(f"{label}: 404 — 챗봇 ID 또는 소속 조직이 맞는지 확인")
             elif r.status_code == 401:
                 errors.append(f"{label}: 401 인증 실패 — API 키를 확인하세요(발급받은 서버의 키인지도 확인)")
             else:
