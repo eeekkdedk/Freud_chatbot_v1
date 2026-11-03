@@ -64,7 +64,8 @@ html, body, [class*="css"], .stApp { font-family: 'Pretendard', -apple-system, s
 .nav .logo { font-weight:800; letter-spacing:.3em; color:#a78bfa; font-size:1.05rem; }
 .nav .pill { font-size:.72rem; color:#9ca3af; border:1px solid #262b3a; border-radius:999px; padding:.2rem .7rem; }
 .lp-hero { text-align:center; padding:1.6rem 0 .6rem; }
-.lp-hero .couch { font-size:3.6rem; }
+.lp-hero .couch { font-size:3.6rem; line-height:0; }
+.lp-hero .mascot { height:210px; width:auto; filter:drop-shadow(0 8px 18px rgba(139,92,246,.35)); animation:bob 3s ease-in-out infinite; }
 .lp-hero h1 { font-size:2.5rem; line-height:1.25; font-weight:800; margin:.5rem 0 .7rem; }
 .lp-hero h1 em { font-style:normal; background:linear-gradient(90deg,#a78bfa,#f0abfc); -webkit-background-clip:text; background-clip:text; color:transparent; }
 .lp-hero .sub { color:#9ca3af; font-size:1.02rem; line-height:1.7; }
@@ -480,16 +481,29 @@ def _pv(tag, msg, read):
     )
 
 
+@st.cache_data
+def _mascot_html() -> str:
+    """assets/mascot.png를 base64로 읽어 <img>로 만든다. 파일이 없으면 이모지로 대체."""
+    import base64
+    try:
+        p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "mascot.png")
+        with open(p, "rb") as fh:
+            b64 = base64.b64encode(fh.read()).decode()
+        return f'<img class="mascot" alt="프로이트 마스코트" src="data:image/png;base64,{b64}">'
+    except Exception:
+        return "🛋️"
+
+
 def landing():
     st.markdown(
         """
 <div class="nav"><div class="logo">F R E U D</div><div class="pill">대화 속 무의식 분석 · 베타</div></div>
 <div class="lp-hero">
-<div class="couch">🛋️</div>
+<div class="couch">{MASCOT}</div>
 <h1>대화 올려 봐요.<br><em>진짜 마음</em>이 뭔지 프로이트가 말해 줄게요.</h1>
 <div class="sub">카톡·SNS·챗봇 대화를 읽고<br>말버릇과 방어기제, 반복되는 패턴을 찾아<br>나에게 맞는 진로의 실마리까지 제안해요.</div>
 </div>
-""",
+""".replace("{MASCOT}", _mascot_html()),
         unsafe_allow_html=True,
     )
     if st.button("🛋️ 지금 해 보기", type="primary", use_container_width=True, key="cta_top"):
