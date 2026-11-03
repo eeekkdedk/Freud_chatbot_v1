@@ -52,7 +52,39 @@ html, body, [class*="css"], .stApp { font-family: 'Pretendard', -apple-system, s
 .card h4 { margin:0 0 .3rem; font-size:1rem; } .card p { margin:.2rem 0; color:#cbd5e1; font-size:.9rem; line-height:1.65; }
 .card .ev { color:#9ca3af; font-size:.82rem; border-left:3px solid #4c3a8f; padding-left:.6rem; margin-top:.4rem; }
 .disc { color:#6b7280; font-size:.78rem; line-height:1.6; margin-top:2rem; border-top:1px solid #262b3a; padding-top:1rem; }
-@media (max-width:640px){ .grid{ grid-template-columns: repeat(3,1fr);} .hero h1{font-size:1.8rem;} }
+.nav { display:flex; align-items:center; justify-content:space-between; padding:.2rem 0 .6rem; }
+.nav .logo { font-weight:800; letter-spacing:.3em; color:#a78bfa; font-size:1.05rem; }
+.nav .pill { font-size:.72rem; color:#9ca3af; border:1px solid #262b3a; border-radius:999px; padding:.2rem .7rem; }
+.lp-hero { text-align:center; padding:1.6rem 0 .6rem; }
+.lp-hero .couch { font-size:3.6rem; }
+.lp-hero h1 { font-size:2.5rem; line-height:1.25; font-weight:800; margin:.5rem 0 .7rem; }
+.lp-hero h1 em { font-style:normal; background:linear-gradient(90deg,#a78bfa,#f0abfc); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.lp-hero .sub { color:#9ca3af; font-size:1.02rem; line-height:1.7; }
+.lp-src { text-align:center; color:#6b7280; font-size:.78rem; margin:.6rem 0 0; }
+.lp-src span { display:inline-block; background:#171a23; border:1px solid #262b3a; border-radius:999px; padding:.2rem .7rem; margin:.15rem .1rem; color:#cbd5e1; }
+.marq { overflow:hidden; margin:.4rem -1rem 0; -webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent); mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent); }
+.marq .track2 { display:flex; gap:.8rem; width:max-content; animation:scroll 38s linear infinite; }
+.marq:hover .track2 { animation-play-state:paused; }
+@keyframes scroll { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+.pv { width:250px; flex:none; background:#151824; border:1px solid #262b3a; border-radius:16px; padding:.9rem 1rem; }
+.pv .tg { font-size:.7rem; color:#c4b5fd; background:#241d44; border-radius:999px; padding:.1rem .55rem; display:inline-block; }
+.pv .bb { margin-top:.6rem; font-size:.85rem; color:#e5e7eb; background:#1d2130; border-radius:12px 12px 12px 3px; padding:.5rem .7rem; line-height:1.5; }
+.pv .bb.me { background:#3b2f6b; border-radius:12px 12px 3px 12px; margin-left:1.4rem; }
+.pv .rd { margin-top:.6rem; font-size:.78rem; color:#9ca3af; border-top:1px dashed #2b3144; padding-top:.5rem; line-height:1.5; }
+.pv .rd b { color:#c4b5fd; }
+.eg { text-align:center; color:#6b7280; font-size:.72rem; margin-top:.4rem; }
+.steps { display:grid; grid-template-columns:repeat(3,1fr); gap:.7rem; margin:.6rem 0; }
+.step { background:#151824; border:1px solid #262b3a; border-radius:14px; padding:1rem .9rem; }
+.step .n { color:#a78bfa; font-weight:800; font-size:.75rem; letter-spacing:.2em; }
+.step .t { font-weight:700; margin:.3rem 0 .2rem; } .step .d { color:#9ca3af; font-size:.85rem; line-height:1.6; }
+.feat { display:grid; grid-template-columns:repeat(2,1fr); gap:.7rem; margin:.6rem 0; }
+.feat .card { margin:0; }
+.sechead { text-align:center; font-size:1.5rem; font-weight:800; margin:2.2rem 0 .3rem; }
+.sechead + .secsub { text-align:center; color:#9ca3af; font-size:.9rem; margin-bottom:.8rem; }
+.lp-cta { text-align:center; background:linear-gradient(160deg,#1c1633,#12141d); border:1px solid #3b2f6b; border-radius:20px; padding:2rem 1rem 1.2rem; margin-top:2.2rem; }
+.lp-cta h2 { font-size:1.7rem; font-weight:800; margin:0 0 .3rem; } .lp-cta p { color:#9ca3af; margin:0 0 .6rem; }
+.foot { color:#6b7280; font-size:.75rem; line-height:1.7; text-align:center; margin-top:2rem; padding-top:1rem; border-top:1px solid #262b3a; }
+@media (max-width:640px){ .grid{ grid-template-columns: repeat(3,1fr);} .hero h1{font-size:1.8rem;} .lp-hero h1{font-size:1.9rem;} .steps,.feat{grid-template-columns:1fr;} }
 </style>
 """,
     unsafe_allow_html=True,
@@ -360,6 +392,96 @@ def hero():
     )
 
 
+_SAMPLES = [
+    ("🎓 진로 고민 단톡", "나 이번에도 발표 자원 안 했어… 근데 자료는 내가 다 만들었음", "겉으론 뒤로 빠지지만 <b>준비는 가장 꼼꼼히</b> 하는 패턴. 인정받고 싶은 마음과 노출에 대한 불안이 함께 보여요."),
+    ("💬 썸 대화", "아니 괜찮아 ㅋㅋ 너 편한 대로 해~ (사실 좀 서운)", "‘괜찮아’를 반복하며 감정을 눌러요. <b>억압</b> 경향 가설과 함께 솔직하게 말해 볼 한 문장을 제안해요."),
+    ("🤖 챗봇 대화", "이 개념 아직도 이해가 안 돼요. 다시 예시로 설명해 줘요", "같은 주제를 여러 번 되묻는 흐름 → <b>아직 숙달 전일 가능성</b>이 있는 영역으로 가설을 세워요."),
+    ("👥 팀플 단톡", "내가 정리할게! 다들 편한 시간만 알려줘", "조율·정리 역할을 자주 맡아요. <b>기획·코디네이션</b> 계열 진로의 실마리로 연결해 봐요."),
+]
+
+
+def _pv(tag, msg, read):
+    return (
+        f'<div class="pv"><span class="tg">{tag}</span>'
+        f'<div class="bb me">{msg}</div>'
+        f'<div class="rd"><b>FREUD의 해석</b><br>{read}</div></div>'
+    )
+
+
+def landing():
+    st.markdown(
+        """
+<div class="nav"><div class="logo">F R E U D</div><div class="pill">대화 속 무의식 분석 · 베타</div></div>
+<div class="lp-hero">
+<div class="couch">🛋️</div>
+<h1>대화 올려 봐요.<br><em>진짜 마음</em>이 뭔지 프로이트가 말해 줄게요.</h1>
+<div class="sub">카톡·SNS·챗봇 대화를 읽고<br>말버릇과 방어기제, 반복되는 패턴을 찾아<br>나에게 맞는 진로의 실마리까지 제안해요.</div>
+</div>
+""",
+        unsafe_allow_html=True,
+    )
+    if st.button("🛋️ 지금 해 보기", type="primary", use_container_width=True, key="cta_top"):
+        st.session_state.stage = "input"
+        st.rerun()
+    st.markdown(
+        '<div class="lp-src">지원하는 입력 <span>카카오톡</span><span>SNS·DM·댓글</span><span>ChatGPT 등 챗봇</span><span>.txt 파일</span></div>',
+        unsafe_allow_html=True,
+    )
+
+    cards = "".join(_pv(*s) for s in _SAMPLES)
+    st.markdown(
+        f'<div class="sechead">이런 대화를 읽어요</div><div class="secsub">아래는 이해를 돕기 위한 가상의 예시예요</div>'
+        f'<div class="marq"><div class="track2">{cards}{cards}</div></div>'
+        '<div class="eg">마우스를 올리면 멈춰요</div>',
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        """
+<div class="sechead">이렇게 진행돼요</div>
+<div class="steps">
+<div class="step"><div class="n">STEP 1</div><div class="t">대화 붙여넣기</div><div class="d">텍스트를 붙여넣거나 .txt 파일을 올려요. 연락처·주민번호는 전송 전에 자동으로 가려져요.</div></div>
+<div class="step"><div class="n">STEP 2</div><div class="t">나를 읽는 분석</div><div class="d">자주 쓰는 표현, 반복 질문, 감정을 다루는 방식에서 경향과 나의 특성을 찾아요.</div></div>
+<div class="step"><div class="n">STEP 3</div><div class="t">진로 실마리</div><div class="d">분석 결과를 바탕으로 어울릴 진로 방향과 다음 행동을 제안하고, 이어서 대화로 더 물어볼 수 있어요.</div></div>
+</div>
+""",
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        """
+<div class="sechead">리포트에서 볼 수 있는 것</div>
+<div class="feat">
+<div class="card"><h4>🔁 반복되는 나의 경향</h4><p>자주 쓰는 단어와 말투를 근거 문장과 함께 보여줘요.</p></div>
+<div class="card"><h4>🛡️ 방어기제 · 감정 처리</h4><p>불편한 감정을 어떻게 다루는지 가설 형태로 짚어요.</p></div>
+<div class="card"><h4>🌱 잘하는 것 · 더 필요한 것</h4><p>반복 질문에서 아직 숙달 전일 수 있는 영역을 찾아요.</p></div>
+<div class="card"><h4>🧭 진로 방향</h4><p>나의 특성에 맞는 진로와 다음 행동을 제안해요.</p></div>
+</div>
+""",
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        """
+<div class="sechead">안심하고 써 보세요</div>
+<div class="feat">
+<div class="card"><h4>🔒 저장하지 않아요</h4><p>대화와 결과는 서버에 저장하지 않고, 브라우저를 닫으면 사라져요.</p></div>
+<div class="card"><h4>🧪 진단이 아니에요</h4><p>참고용 AI 해석이며 심리 검사·진단·상담을 대신하지 않아요.</p></div>
+</div>
+""",
+        unsafe_allow_html=True,
+    )
+
+    st.markdown('<div class="lp-cta"><h2>다음은 내 대화 차례예요.</h2><p>1~3분이면 결과를 볼 수 있어요.</p></div>', unsafe_allow_html=True)
+    if st.button("🛋️ 지금 해 보기", type="primary", use_container_width=True, key="cta_bottom"):
+        st.session_state.stage = "input"
+        st.rerun()
+    st.markdown(
+        '<div class="foot">FREUD · 미래교육 AI 문제해결 챌린지 출품작<br>입력한 대화는 분석을 위해 외부 AI API로 전송되며, 분석 결과는 참고용입니다.</div>',
+        unsafe_allow_html=True,
+    )
+
+
 def terms_box():
     with st.expander("이용 안내 및 개인정보 처리 (필독)"):
         st.markdown(
@@ -478,20 +600,28 @@ def disclaimer():
 
 
 # ───────────────────────── 상태 관리 ─────────────────────────
-for k, v in (("stage", "input"), ("raw", ""), ("result", None), ("target", ""), ("chat", [])):
+for k, v in (("stage", "landing"),("raw", ""), ("result", None), ("target", ""), ("chat", [])):
     st.session_state.setdefault(k, v)
 
 
 def reset():
     for k in ("stage", "raw", "result", "target", "chat", "src", "busy"):
         st.session_state.pop(k, None)
+    st.session_state.stage = "input"  # 다시 분석 시 랜딩 대신 바로 입력 화면으로
 
 
-if not get_key():
+if st.session_state.stage != "landing" and not get_key():
     st.error("API 키가 설정되지 않았습니다. 배포 환경의 Secrets에 `key = \"...\"` 를 추가해 주세요.")
 
+# ───────────────────────── 0단계: 첫 페이지 ─────────────────────────
+if st.session_state.stage == "landing":
+    landing()
+
 # ───────────────────────── 1단계: 입력 ─────────────────────────
-if st.session_state.stage == "input":
+elif st.session_state.stage == "input":
+    if st.button("← 처음으로"):
+        st.session_state.stage = "landing"
+        st.rerun()
     hero()
     st.markdown('<div class="sec">INPUT</div>', unsafe_allow_html=True)
     tab1, tab2 = st.tabs(["✍️ 텍스트 붙여넣기", "📄 파일 업로드 (.txt)"])
