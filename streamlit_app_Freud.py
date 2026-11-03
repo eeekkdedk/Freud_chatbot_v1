@@ -17,7 +17,7 @@ import streamlit as st
 GATEWAY_BASE = "https://factchat-cloud.mindlogic.ai/v1/gateway"
 GATEWAY_URL = f"{GATEWAY_BASE}/chat/completions"
 DEFAULT_MODEL = "gpt-5.6-luna"  # Secrets에 `model = "..."`을 넣으면 코드 수정 없이 교체 가능
-CHATBOT_URL = f"{GATEWAY_BASE}/chatbots/55975/chat/completions"  # 게이트웨이 호출 실패 시 대체
+CHATBOT_URL = f"{GATEWAY_BASE}/chatbots/55975/chat/completions"  # 챗쿠에서 만든 챗봇 (먼저 호출)
 CONNECT_TIMEOUT = 10
 READ_TIMEOUT = 180
 RETRY_STATUS = {429, 500, 502, 503, 504}
@@ -156,7 +156,7 @@ def _post_with_retry(url: str, headers: dict, payload: dict):
 
 
 def call_llm(messages: list):
-    """(응답 텍스트, 호출 출처 라벨) 반환. 게이트웨이 → 챗봇 엔드포인트 순으로 시도."""
+    """(응답 텍스트, 호출 출처 라벨) 반환. 챗쿠 챗봇 엔드포인트 → 게이트웨이(모델 직접 호출) 순으로 시도."""
     key = get_key()
     if not key:
         raise RuntimeError("API 키가 없습니다. Streamlit Secrets에 `key`를 등록해 주세요.")
@@ -164,8 +164,8 @@ def call_llm(messages: list):
     model = get_model()
     errors = []
     for url, extra, label in (
-        (GATEWAY_URL, {"model": model}, f"gateway · {model}"),
-        (CHATBOT_URL, {}, "chatbot 55975 (대체)"),
+        (CHATBOT_URL, {}, "chatbot 55975"),
+        (GATEWAY_URL, {"model": model}, f"gateway 대체 · {model}"),
     ):
         try:
             r = _post_with_retry(url, headers, {"messages": messages, "stream": False, **extra})
