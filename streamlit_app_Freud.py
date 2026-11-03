@@ -52,6 +52,11 @@ html, body, [class*="css"], .stApp { font-family: 'Pretendard', -apple-system, s
 .card h4 { margin:0 0 .3rem; font-size:1rem; } .card p { margin:.2rem 0; color:#cbd5e1; font-size:.9rem; line-height:1.65; }
 .card .ev { color:#9ca3af; font-size:.82rem; border-left:3px solid #4c3a8f; padding-left:.6rem; margin-top:.4rem; }
 .disc { color:#6b7280; font-size:.78rem; line-height:1.6; margin-top:2rem; border-top:1px solid #262b3a; padding-top:1rem; }
+.wait { text-align:center; background:linear-gradient(160deg,#1c1633,#12141d); border:1px solid #3b2f6b; border-radius:18px; padding:1.8rem 1.2rem; margin:1rem 0; }
+.wait .em { font-size:2.8rem; animation:bob 1.6s ease-in-out infinite; }
+.wait .ln { font-size:1.05rem; font-weight:600; line-height:1.6; margin-top:.5rem; color:#e5e7eb; }
+.wait .tm { color:#6b7280; font-size:.75rem; margin-top:.8rem; }
+@keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
 .nav { display:flex; align-items:center; justify-content:space-between; padding:.2rem 0 .6rem; }
 .nav .logo { font-weight:800; letter-spacing:.3em; color:#a78bfa; font-size:1.05rem; }
 .nav .pill { font-size:.72rem; color:#9ca3af; border:1px solid #262b3a; border-radius:999px; padding:.2rem .7rem; }
@@ -377,6 +382,70 @@ def run_analysis(text: str, target: str, keep: str):
     return parse_json(raw), raw, src
 
 
+# ───────────────────────── 분석 중 멘트 (프로이트 명언 모티브) ─────────────────────────
+# 실제 명언을 귀엽게 풀어 쓴 문구예요. (직접 인용 아님)
+WAIT_LINES = [
+    ("🛋️", "소파에 편하게 누우세요~ 프로이트 박사가 진료 시작합니다"),
+    ("🌊", "“꿈은 무의식으로 가는 왕도다” 라고 하셨죠. 말투 속 지름길을 걷는 중…"),
+    ("🧊", "마음은 빙산! 물 위 한 조각 말고 물속 아래쪽을 살펴보는 중이에요"),
+    ("🫣", "“비밀은 입이 아니라 온몸으로 새어 나온다” 했거든요. 말버릇에서 단서 줍는 중…"),
+    ("🎭", "슬쩍 숨긴 속마음에 씌워진 가면을 살살 벗기는 중이에요"),
+    ("🗣️", "혹시 말실수 했나요? 프로이트가 제일 좋아하는 단서예요 (프로이트식 말실수!)"),
+    ("🔍", "‘괜찮아’가 정말 괜찮은 건지 돋보기로 확인 중…"),
+    ("📖", "“이드가 있던 곳에 자아가 있게 하라” — 나를 더 잘 알아가는 중이에요"),
+    ("🚬", "“때로는 시가가 그냥 시가일 뿐” 이라죠. 그래도 대화는 일단 꼼꼼히 읽을게요"),
+    ("🧠", "자주 쓰는 단어를 세고 또 세는 중… 반복에는 이유가 있대요"),
+    ("🛡️", "방어기제 레이더 작동! 어떤 방패를 쓰고 계신지 살펴보고 있어요"),
+    ("🌱", "솔직해지는 것도 좋은 훈련이라고 해요. 천천히 같이 들여다봐요"),
+    ("☕", "분석이 끝나가요. 커피 한 모금 하고 오시면 결과가 나와 있을지도요"),
+    ("🧭", "마음 한쪽에서 진로의 실마리를 찾고 있어요. 조금만 기다려 주세요"),
+]
+
+
+def run_with_freud_quotes(text: str, target: str, keep: str):
+    """분석을 백그라운드 스레드에서 돌리면서 기다리는 동안 멘트를 돌려가며 보여준다."""
+    import random
+    import threading
+    import time
+
+    box: dict = {}
+
+    def work():
+        try:
+            box["out"] = run_analysis(text, target, keep)
+        except Exception as ex:  # noqa: BLE001
+            box["err"] = ex
+
+    th = threading.Thread(target=work, daemon=True)
+    try:  # 스레드에서도 st.secrets 등을 안전하게 쓰기 위해 실행 컨텍스트 연결
+        from streamlit.runtime.scriptrunner import add_script_run_ctx
+
+        add_script_run_ctx(th)
+    except Exception:
+        pass
+    th.start()
+
+    order = list(range(len(WAIT_LINES)))
+    random.shuffle(order)
+    order = [0] + [i for i in order if i != 0]  # 첫 멘트는 항상 소파 인사
+    slot = st.empty()
+    t0, tick = time.time(), 0
+    while th.is_alive():
+        em, line = WAIT_LINES[order[(tick // 5) % len(order)]]  # 5초마다 멘트 교체
+        sec = int(time.time() - t0)
+        slot.markdown(
+            f'<div class="wait"><div class="em">{em}</div><div class="ln">{e(line)}</div>'
+            f'<div class="tm">프로이트 박사가 분석 중… {sec}초 · 보통 1~3분 걸려요</div></div>',
+            unsafe_allow_html=True,
+        )
+        th.join(1.0)
+        tick += 1
+    slot.empty()
+    if "err" in box:
+        raise box["err"]
+    return box["out"]
+
+
 # ───────────────────────── 화면 조각 ─────────────────────────
 def hero():
     st.markdown(
@@ -697,15 +766,14 @@ elif st.session_state.stage == "pick":
     )
 
     if busy:  # 버튼이 잠긴 상태로 분석 실행
-        with st.spinner("가면을 벗기는 중… 보통 1~3분 걸려요"):
-            try:
-                result, raw_out, src = run_analysis(text, target.strip(), keep)
-            except Exception as ex:
-                st.session_state.busy = False
-                st.error(f"분석 중 오류가 발생했어요: {ex}")
-                if st.button("다시 시도"):
-                    st.rerun()
-                st.stop()
+        try:
+            result, raw_out, src = run_with_freud_quotes(text, target.strip(), keep)
+        except Exception as ex:
+            st.session_state.busy = False
+            st.error(f"분석 중 오류가 발생했어요: {ex}")
+            if st.button("다시 시도"):
+                st.rerun()
+            st.stop()
         st.session_state.busy = False
         if result is None:
             st.error("결과 형식을 해석하지 못했어요. 다시 시도해 주세요.")
