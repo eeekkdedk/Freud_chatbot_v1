@@ -1,7 +1,7 @@
 """FREUD — 대화 속 무의식 분석 챗봇 (Streamlit)
 
 - 카톡/SNS/챗봇 대화 기록을 붙여넣거나 업로드 → 자기이해 분석(A~E) → 진로 추가질문 → 진로 결과
-- LLM 호출은 BAZE API Gateway (OpenAI 호환). 키는 st.secrets["key"]에서만 읽습니다.
+- LLM 호출은 ChatKHU(BAZE) API Gateway (OpenAI 호환). 키는 st.secrets["key"]에서만 읽습니다.
 """
 import html
 import json
@@ -13,10 +13,14 @@ import requests
 import streamlit as st
 
 # ───────────────────────── 설정 ─────────────────────────
-CHATBOT_URL = "https://factchat-cloud.mindlogic.ai/v1/gateway/chatbots/55975/chat/completions"
-GATEWAY_URL = "https://factchat-cloud.mindlogic.ai/v1/gateway/chat/completions"  # 챗봇 엔드포인트 실패 시 대체
-GATEWAY_MODEL = "gpt-5.6-luna"
-REQUEST_TIMEOUT = 240
+# ChatKHU(경희대 생성형 AI 플랫폼) API Gateway — OpenAI SDK 호환 (base_url 아래 /chat/completions)
+GATEWAY_BASE = "https://factchat-cloud.mindlogic.ai/v1/gateway"
+GATEWAY_URL = f"{GATEWAY_BASE}/chat/completions"
+DEFAULT_MODEL = "claude-sonnet-5"  # Secrets에 `model = "..."`을 넣으면 코드 수정 없이 교체 가능
+CHATBOT_URL = f"{GATEWAY_BASE}/chatbots/55975/chat/completions"  # 게이트웨이 호출 실패 시 대체
+CONNECT_TIMEOUT = 10
+READ_TIMEOUT = 180
+RETRY_STATUS = {429, 500, 502, 503, 504}
 
 MIN_CHARS = 300
 MAX_CHARS = 60_000
@@ -106,12 +110,20 @@ def e(x) -> str:
 
 
 # ───────────────────────── LLM 호출 ─────────────────────────
-def get_key() -> str:
+def _secret(name: str, env: str = "") -> str:
     try:
-        k = st.secrets["key"]
+        v = st.secrets[name]
     except Exception:
-        k = os.environ.get("BAZE_API_KEY", "")
-    return str(k).strip()
+        v = os.environ.get(env, "") if env else ""
+    return str(v).strip()
+
+
+def get_key() -> str:
+    return _secret("key", "BAZE_API_KEY")
+
+
+def get_model() -> str:
+    return _secret("model", "BAZE_MODEL") or DEFAULT_MODEL
 
 
 def _extract_text(data: dict) -> str:
@@ -124,33 +136,50 @@ def _extract_text(data: dict) -> str:
     return ""
 
 
+def _post_with_retry(url: str, headers: dict, payload: dict):
+    """일시적 오류(429/5xx, 연결 끊김)는 1회 재시도. 응답 객체 반환."""
+    import time
+
+    last = None
+    for attempt in range(2):
+        try:
+            r = requests.post(url, headers=headers, json=payload, timeout=(CONNECT_TIMEOUT, READ_TIMEOUT))
+            if r.status_code in RETRY_STATUS and attempt == 0:
+                time.sleep(2)
+                continue
+            return r
+        except (requests.ConnectionError, requests.Timeout) as ex:
+            last = ex
+            if attempt == 0:
+                time.sleep(2)
+    raise last
+
+
 def call_llm(messages: list):
-    """(응답 텍스트, 호출 출처 라벨) 반환"""
+    """(응답 텍스트, 호출 출처 라벨) 반환. 게이트웨이 → 챗봇 엔드포인트 순으로 시도."""
     key = get_key()
     if not key:
         raise RuntimeError("API 키가 없습니다. Streamlit Secrets에 `key`를 등록해 주세요.")
     headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
+    model = get_model()
     errors = []
     for url, extra, label in (
-        (CHATBOT_URL, {}, "chatbot 55975"),
-        (GATEWAY_URL, {"model": GATEWAY_MODEL}, f"gateway 대체 · {GATEWAY_MODEL}"),
+        (GATEWAY_URL, {"model": model}, f"gateway · {model}"),
+        (CHATBOT_URL, {}, "chatbot 55975 (대체)"),
     ):
         try:
-            r = requests.post(
-                url,
-                headers=headers,
-                json={"messages": messages, "stream": False, **extra},
-                timeout=REQUEST_TIMEOUT,
-            )
+            r = _post_with_retry(url, headers, {"messages": messages, "stream": False, **extra})
             if r.status_code == 200:
                 text = _extract_text(r.json())
                 if text.strip():
                     return text, label
-                errors.append("빈 응답")
+                errors.append(f"{label}: 빈 응답")
+            elif r.status_code == 401:
+                errors.append(f"{label}: 401 인증 실패 — API 키를 확인하세요(발급받은 서버의 키인지도 확인)")
             else:
-                errors.append(f"HTTP {r.status_code}: {r.text[:200]}")
+                errors.append(f"{label}: HTTP {r.status_code} {r.text[:150]}")
         except Exception as ex:  # 네트워크/타임아웃/JSON 오류
-            errors.append(type(ex).__name__ + ": " + str(ex)[:150])
+            errors.append(f"{label}: {type(ex).__name__} {str(ex)[:120]}")
     raise RuntimeError(" | ".join(errors))
 
 
@@ -573,7 +602,7 @@ def terms_box():
         st.markdown(
             """
 - **저장하지 않습니다.** 입력한 대화와 분석 결과는 서버에 저장·기록하지 않으며, 브라우저를 닫으면 사라집니다.
-- **외부 AI로 전송됩니다.** 분석을 위해 대화 텍스트가 AI API(BAZE Gateway)로 전송됩니다.
+- **외부 AI로 전송됩니다.** 분석을 위해 대화 텍스트가 AI API(경희대 ChatKHU API Gateway)로 전송됩니다.
 - **전화번호·이메일·주민번호**는 전송 전에 자동으로 가려집니다. 이름은 가명(예: "홍길동" → "길동")으로 바꿔 올리는 것을 권장합니다.
 - 본인이 참여한 대화만 올려 주세요. 타인의 대화를 동의 없이 올리거나 분석 결과를 상대방과의 다툼·법적 절차에 쓰지 마세요.
 - 결과는 **참고용 AI 해석**이며 심리 검사·진단·상담을 대신하지 않습니다.
