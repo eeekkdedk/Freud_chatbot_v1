@@ -57,6 +57,9 @@ html, body, [class*="css"], .stApp { font-family: 'Pretendard', -apple-system, s
 .wait .ln { font-size:1.05rem; font-weight:600; line-height:1.6; margin-top:.5rem; color:#e5e7eb; }
 .wait .tm { color:#6b7280; font-size:.75rem; margin-top:.8rem; }
 @keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+.fnd { padding:1.3rem 1.3rem 1.1rem; }
+.fnd .qt { font-size:1.45rem; font-weight:800; line-height:1.45; color:#f3f0ff; border-left:4px solid #8b5cf6; padding-left:.8rem; margin-bottom:.7rem; word-break:keep-all; }
+.fnd h4 { font-size:1.02rem; color:#c4b5fd; margin:.1rem 0 .5rem; }
 .nav { display:flex; align-items:center; justify-content:space-between; padding:.2rem 0 .6rem; }
 .nav .logo { font-weight:800; letter-spacing:.3em; color:#a78bfa; font-size:1.05rem; }
 .nav .pill { font-size:.72rem; color:#9ca3af; border:1px solid #262b3a; border-radius:999px; padding:.2rem .7rem; }
@@ -610,11 +613,13 @@ def render_result(r: dict):
         for f in finds:
             conf = txt(f.get("confidence"))
             badge = f' <span style="color:#9ca3af;font-size:.75rem">확신도 {e(conf)}</span>' if conf else ""
-            ev = f'<div class="ev">{e(txt(f.get("evidence")))}</div>' if f.get("evidence") else ""
+            evt = txt(f.get("evidence"))
+            quote = f'<div class="qt">“{e(evt)}”</div>' if evt else ""
             st.markdown(
-                f'<div class="card"><h4>{e(txt(f.get("label")))}{badge}</h4>'
+                f'<div class="card fnd">{quote}'
+                f'<h4>{e(txt(f.get("label")))}{badge}</h4>'
                 f'<p><b>관찰</b> {e(txt(f.get("observation")))}</p>'
-                f'<p><b>가설</b> {e(txt(f.get("hypothesis")))}</p>{ev}</div>',
+                f'<p><b>가설</b> {e(txt(f.get("hypothesis")))}</p></div>',
                 unsafe_allow_html=True,
             )
 
@@ -645,10 +650,11 @@ def to_markdown(r: dict, target: str) -> str:
         if sec.get("status") == "insufficient" or not finds:
             out.append("- 자료 부족으로 판단 보류")
         for f in finds:
-            out.append(
-                f"- **{txt(f.get('label'))}** [관찰] {txt(f.get('observation'))} "
-                f"[가설] {txt(f.get('hypothesis'))} (근거: {txt(f.get('evidence'))}, 확신도: {txt(f.get('confidence'))})"
-            )
+            if txt(f.get("evidence")):
+                out.append(f"> **“{txt(f.get('evidence'))}”**")
+            out.append(f"**{txt(f.get('label'))}** (확신도: {txt(f.get('confidence'))})")
+            out.append(f"- 관찰: {txt(f.get('observation'))}")
+            out.append(f"- 가설: {txt(f.get('hypothesis'))}\n")
     rq = lst(r.get("reflection_questions"))
     if rq:
         out += ["", "## 성찰 질문"] + [f"- {txt(q)}" for q in rq]
