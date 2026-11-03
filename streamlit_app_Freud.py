@@ -16,7 +16,7 @@ import streamlit as st
 # ChatKHU(경희대 생성형 AI 플랫폼) API Gateway — OpenAI SDK 호환 (base_url 아래 /chat/completions)
 GATEWAY_BASE = "https://factchat-cloud.mindlogic.ai/v1/gateway"
 GATEWAY_URL = f"{GATEWAY_BASE}/chat/completions"
-DEFAULT_MODEL = "claude-sonnet-5"  # Secrets에 `model = "..."`을 넣으면 코드 수정 없이 교체 가능
+DEFAULT_MODEL = "gpt-5.6-luna"  # Secrets에 `model = "..."`을 넣으면 코드 수정 없이 교체 가능
 CHATBOT_URL = f"{GATEWAY_BASE}/chatbots/55975/chat/completions"  # 게이트웨이 호출 실패 시 대체
 CONNECT_TIMEOUT = 10
 READ_TIMEOUT = 180
