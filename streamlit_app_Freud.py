@@ -188,14 +188,39 @@ def parse_speakers(text: str):
     return people if sum(people.values()) >= 2 else Counter()
 
 
-def read_upload(f) -> str:
-    raw = f.getvalue()
+def _decode_bytes(raw: bytes) -> str:
+    # BOM이 있으면 먼저 판별 (utf-16은 cp949로 잘못 디코딩되기 쉬움)
+    if raw.startswith((b"\xff\xfe", b"\xfe\xff")):
+        try:
+            return raw.decode("utf-16")
+        except Exception:
+            pass
     for enc in ("utf-8-sig", "cp949", "utf-16"):
         try:
             return raw.decode(enc)
         except Exception:
             continue
     return raw.decode("utf-8", errors="ignore")
+
+
+def read_upload(f) -> str:
+    """업로드 파일을 텍스트로 변환. 모바일 카톡 내보내기는 .zip이나 확장자 없는 파일로 오기도 한다."""
+    raw = f.getvalue()
+    name = (getattr(f, "name", "") or "").lower()
+    if name.endswith(".zip") or raw[:4] == b"PK\x03\x04":
+        import io
+        import zipfile
+
+        try:
+            with zipfile.ZipFile(io.BytesIO(raw)) as z:
+                cands = [n for n in z.namelist() if n.lower().endswith((".txt", ".csv", ".md"))]
+                if not cands:
+                    return ""
+                cands.sort(key=lambda n: z.getinfo(n).file_size, reverse=True)
+                return _decode_bytes(z.read(cands[0]))
+        except Exception:
+            return ""
+    return _decode_bytes(raw)
 
 
 def fit_length(text: str, keep: str) -> str:
@@ -480,8 +505,19 @@ if st.session_state.stage == "input":
         )
         st.caption(f"{len(pasted):,} / 200,000자 · 최소 {MIN_CHARS}자")
     with tab2:
-        up = st.file_uploader("텍스트 파일", type=["txt", "csv", "md"], label_visibility="collapsed")
-        st.caption("카카오톡 → 채팅방 메뉴 → 대화 내보내기(텍스트)로 받은 .txt 파일을 올려 주세요.")
+        # 모바일(iOS/Android) 파일 선택창은 확장자 필터(accept)를 엄격히 적용해 .txt가 회색으로 막히는 경우가 있어
+        # type 제한을 두지 않고, 확장자는 아래에서 직접 검사한다.
+        up = st.file_uploader("텍스트 파일", label_visibility="collapsed")
+        st.caption("카카오톡 → 채팅방 메뉴 → 대화 내보내기(텍스트)로 받은 .txt 파일(또는 .zip)을 올려 주세요.")
+        if up is not None:
+            _nm = up.name.lower()
+            if not _nm.endswith((".txt", ".csv", ".md", ".zip")) and "." in _nm:
+                st.warning("텍스트(.txt) 파일이 아닌 것 같아요. 그래도 읽어 볼게요.")
+            _preview = read_upload(up)
+            if _preview.strip():
+                st.success(f"✅ {up.name} · {len(_preview):,}자를 불러왔어요.")
+            else:
+                st.error("파일에서 텍스트를 읽지 못했어요. 카톡 '텍스트로 내보내기' 파일인지 확인하거나, '텍스트 붙여넣기' 탭을 이용해 주세요.")
 
     terms_box()
     ok1 = st.checkbox("이용 안내를 읽었고, 대화가 외부 AI로 전송되는 데 동의합니다. (필수)")
