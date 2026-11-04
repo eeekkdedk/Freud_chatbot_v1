@@ -533,15 +533,18 @@ def _pv(tag, msg, read):
 
 @st.cache_data
 def _mascot_html() -> str:
-    """assets/mascot.png를 base64로 읽어 <img>로 만든다. 파일이 없으면 이모지로 대체."""
+    """assets/mascot.svg(벡터)를 우선 사용하고, 없으면 mascot.png → 이모지 순으로 대체."""
     import base64
-    try:
-        p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "mascot.png")
-        with open(p, "rb") as fh:
-            b64 = base64.b64encode(fh.read()).decode()
-        return f'<img class="mascot" alt="프로이트 마스코트" src="data:image/png;base64,{b64}">'
-    except Exception:
-        return "🛋️"
+
+    base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
+    for name, mime in (("mascot.svg", "image/svg+xml"), ("mascot.png", "image/png")):
+        try:
+            with open(os.path.join(base, name), "rb") as fh:
+                b64 = base64.b64encode(fh.read()).decode()
+            return f'<img class="mascot" alt="쿠로이트" src="data:{mime};base64,{b64}">'
+        except Exception:
+            continue
+    return "🛋️"
 
 
 def landing():
