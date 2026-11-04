@@ -156,6 +156,14 @@ lab_map2 = sm.argmax(0).astype(np.int32)
 lab_map2[~sil] = -1
 lab_map = lab_map2
 
+# 4-c) 셔츠 깃(넥타이 양옆) 좌우 대칭 보정: 왼쪽을 좌우반전해 오른쪽에 덮어쓴다 (4배 확대 좌표 기준)
+if S == 4:
+    AX, MX0, MY0, MY1 = 1070, 890, 1650, 1980
+    left = lab_map[MY0:MY1, MX0:AX].copy()
+    lab_map[MY0:MY1, AX + 1:AX + 1 + (AX - MX0)] = left[:, ::-1]
+    sl = sil[MY0:MY1, MX0:AX].copy()  # 투명도(실루엣)도 같이 대칭
+    sil[MY0:MY1, AX + 1:AX + 1 + (AX - MX0)] = sl[:, ::-1]
+
 # 5) 대표 색: 라벨 영역의 중앙값 (원본 BGR)
 def center_color(k):
     m = lab_map == k
