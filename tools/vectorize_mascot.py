@@ -164,6 +164,15 @@ if S == 4:
     sl = sil[MY0:MY1, MX0:AX].copy()  # 투명도(실루엣)도 같이 대칭
     sil[MY0:MY1, AX + 1:AX + 1 + (AX - MX0)] = sl[:, ::-1]
 
+# 4-d) 주머니 시계줄: 래스터에서 뭉개진 금색 얼룩을 조끼색으로 지우고, 아래에서 벡터로 다시 그린다
+if S == 4:
+    vest = int(lab_map[2200, 1000])
+    bx0, bx1, by0, by1 = 266 * S, 296 * S, 538 * S, 562 * S
+    blk = lab_map[by0:by1, bx0:bx1]
+    dark_ids = np.where(centers[:, 0] < 30)[0]          # 윤곽선·단추(어두운 색)는 건드리지 않음
+    blk[(blk != vest) & (blk >= 0) & ~np.isin(blk, dark_ids)] = vest
+    lab_map[by0:by1, bx0:bx1] = blk
+
 # 5) 대표 색: 라벨 영역의 중앙값 (원본 BGR)
 def center_color(k):
     m = lab_map == k
@@ -258,6 +267,17 @@ svg.append('<g fill-rule="evenodd" stroke="none">')
 svg.append(f'<path fill="{base_col}" d="{base_d}"/>')
 for area, col, d in layers:
     svg.append(f'<path fill="{col}" d="{d}"/>')
-svg.append("</g></svg>")
+svg.append("</g>")
+# 시계줄: 고리 5개 (원본 좌표계). 어두운 외곽선 위에 금색 링을 얹고, 가운데는 비워 조끼색이 보이게 한다.
+if S == 4:
+    links = [(270.4, 542.4, 3.0, 2.2, 55), (274.5, 549.8, 3.3, 2.3, 120), (280.0, 557.0, 3.3, 2.3, 50),
+             (286.6, 559.9, 3.0, 2.1, 15), (291.0, 560.6, 2.6, 1.9, 95)]
+    svg.append('<g fill="none" stroke-linecap="round">')
+    for cx, cy, rx, ry, rot in links:
+        svg.append(f'<ellipse cx="{cx}" cy="{cy}" rx="{rx}" ry="{ry}" transform="rotate({rot} {cx} {cy})" stroke="#2a1208" stroke-width="2.1"/>')
+    for cx, cy, rx, ry, rot in links:
+        svg.append(f'<ellipse cx="{cx}" cy="{cy}" rx="{rx}" ry="{ry}" transform="rotate({rot} {cx} {cy})" stroke="#e8c97e" stroke-width="1.0"/>')
+    svg.append("</g>")
+svg.append("</svg>")
 open(dst, "w").write("\n".join(svg))
 print("layers", len(layers), "colors", [l[1] for l in layers])
