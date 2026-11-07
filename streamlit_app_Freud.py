@@ -493,6 +493,34 @@ _GUIDES = {
 }
 
 
+class _LocalFile:
+    """저장소에 들어 있는 예시 파일을 업로드 파일처럼 다루기 위한 얇은 래퍼."""
+
+    def __init__(self, path: str):
+        self.name = os.path.basename(path)
+        with open(path, "rb") as fh:
+            self._raw = fh.read()
+
+    def getvalue(self):
+        return self._raw
+
+
+@st.cache_data
+def load_demo(kind: str) -> str:
+    base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "demo")
+    try:
+        if kind == "카카오톡 대화":
+            return read_upload(_LocalFile(os.path.join(base, "kakao.csv")))
+        if kind == "인스타그램 DM":
+            convs = read_instagram([_LocalFile(os.path.join(base, "instagram.zip"))])
+            return "\n\n".join(ig_to_text(convs[k]) for k in convs)
+        d = os.path.join(base, "chatku")
+        sess, memo = read_chatku([_LocalFile(os.path.join(d, n)) for n in sorted(os.listdir(d))])
+        return chatku_to_text(sess, list(sess), memo, False)
+    except Exception:
+        return ""
+
+
 def _guide(key: str):
     g = _GUIDES[key]
     base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "guides", key)
@@ -753,6 +781,7 @@ _ICONS = {
     "sns": '<svg class="ic" viewBox="0 0 24 24"><path d="M3 11.5 21 3l-6.500 18-3.2-7.300z" fill="#A40F16"/><path d="M11.3 13.7 21 3" stroke="#fff" stroke-width="1.4" fill="none" stroke-linecap="round"/></svg>',
     "chatbot": '<svg class="ic" viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="12" rx="4" fill="#717171"/><circle cx="9" cy="14" r="1.7" fill="#fff"/><circle cx="15" cy="14" r="1.7" fill="#fff"/><path d="M12 8V5" stroke="#717171" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="4.2" r="1.5" fill="#C0A353"/><path d="M2 13v3M22 13v3" stroke="#717171" stroke-width="1.6" stroke-linecap="round"/></svg>',
     "chatkhu": '<svg class="ic" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="15" rx="6" fill="#A40F16"/><rect x="6" y="9" width="12" height="9" rx="4" fill="#F9D9B0"/><circle cx="9.500" cy="13" r="1" fill="#222"/><circle cx="14.500" cy="13" r="1" fill="#222"/><path d="M8 6 6.500 3M16 6l1.500-3" stroke="#A40F16" stroke-width="1.400" stroke-linecap="round"/></svg>',
+    "demo": '<svg class="ic" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6.500L4.500 19a1.600 1.600 0 0 0 1.400 2.400h12.200a1.600 1.600 0 0 0 1.400-2.400L14 9.500V3" fill="#f1e3e4" stroke="#A40F16" stroke-width="1.600" stroke-linejoin="round"/><path d="M7.500 15h9" stroke="#A40F16" stroke-width="1.600" stroke-linecap="round"/><circle cx="10.500" cy="18" r="1" fill="#A40F16"/><circle cx="14" cy="17" r=".8" fill="#A40F16"/></svg>',
     "txt": '<svg class="ic" viewBox="0 0 24 24"><path d="M6 2.5h8l5 5V20a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 20V4A1.5 1.5 0 0 1 6 2.5z" fill="#C0A353"/><path d="M14 2.5v5h5" fill="#e6d5a3"/><path d="M8 12h8M8 15h8M8 18h5" stroke="#fff" stroke-width="1.3" stroke-linecap="round"/></svg>',
 }
 
@@ -787,22 +816,22 @@ def _icon_uri(name: str) -> str:
     return "data:image/svg+xml;base64," + base64.b64encode(svg.encode()).decode()
 
 
-_INPUT_TABS = [("paste", "직접 붙여넣기", "txt"), ("kakao", "카카오톡", "kakao"), ("insta", "인스타그램 DM", "sns"), ("chatku", "챗쿠 대화", "chatkhu")]
+_INPUT_TABS = [("paste", "직접 붙여넣기", "txt"), ("kakao", "카카오톡", "kakao"), ("insta", "인스타그램 DM", "sns"), ("chatku", "챗쿠 대화", "chatkhu"), ("demo", "데모 체험", "demo")]
 
 
 def input_selector() -> str:
     """아이콘 이미지 + 선택 버튼 4칸. 모바일에서도 한 줄로 유지한다."""
     st.markdown(
-        "<style>.st-key-inrow [data-testid='stHorizontalBlock']{flex-wrap:nowrap!important;gap:.5rem!important}"
+        "<style>.st-key-inrow [data-testid='stHorizontalBlock']{flex-wrap:nowrap!important;gap:.35rem!important}"
         ".st-key-inrow [data-testid='stColumn']{min-width:0!important;flex:1 1 0!important}"
         ".st-key-inrow button{padding:.35rem .2rem!important;white-space:nowrap}"
-        ".st-key-inrow button p{font-size:.82rem!important}"
-        ".inic{display:block;margin:0 auto .3rem;width:30px;height:30px;object-fit:contain}</style>",
+        ".st-key-inrow button p{font-size:.74rem!important}"
+        ".inic{display:block;margin:0 auto .3rem;width:28px;height:28px;object-fit:contain}</style>",
         unsafe_allow_html=True,
     )
     cur = st.session_state.setdefault("in_tab", "paste")
     with st.container(key="inrow"):
-        for col, (key, label, icon) in zip(st.columns(4), _INPUT_TABS):
+        for col, (key, label, icon) in zip(st.columns(len(_INPUT_TABS)), _INPUT_TABS):
             with col:
                 st.markdown(f'<img class="inic" alt="" src="{_icon_uri(icon)}">', unsafe_allow_html=True)
                 if st.button(label, key=f"in_btn_{key}", type="primary" if key == cur else "secondary", use_container_width=True):
@@ -1056,7 +1085,7 @@ elif st.session_state.stage == "input":
     hero()
     st.markdown('<div class="sec">INPUT</div>', unsafe_allow_html=True)
     _sel = input_selector()
-    texts = {"paste": "", "kakao": "", "insta": "", "chatku": ""}
+    texts = {"paste": "", "kakao": "", "insta": "", "chatku": "", "demo": ""}
     if _sel == "paste":
         pasted = st.text_area(
             "대화 내용",
@@ -1115,7 +1144,17 @@ elif st.session_state.stage == "input":
                 texts["chatku"] = chatku_to_text(sess, picked, memo, with_ai)
                 if texts["chatku"].strip():
                     st.success(f"✅ {len(picked)}개 대화 · {len(texts['chatku']):,}자를 불러왔어요." + (" (메모리 포함)" if memo else ""))
-    input_text = next((texts[k] for k in ("kakao", "insta", "chatku", "paste") if texts[k].strip()), "")
+    if _sel == "demo":
+        st.info("💡 가상의 인물·대화로 만든 **예시 데이터**예요. 내 대화가 없어도 서비스를 체험해 볼 수 있어요.")
+        kind = st.radio("체험할 예시", ["카카오톡 대화", "인스타그램 DM", "챗쿠 대화"], horizontal=True, label_visibility="collapsed")
+        texts["demo"] = load_demo(kind)
+        if texts["demo"].strip():
+            st.success(f"✅ 예시 데이터 · {len(texts['demo']):,}자를 불러왔어요.")
+            with st.expander("미리보기"):
+                st.text(texts["demo"][:1200] + ("…" if len(texts["demo"]) > 1200 else ""))
+        else:
+            st.error("예시 데이터를 불러오지 못했어요.")
+    input_text = next((texts[k] for k in ("demo", "kakao", "insta", "chatku", "paste") if texts[k].strip()), "")
 
     terms_box()
     ok1 = st.checkbox("이용 안내를 읽었고, 대화가 챗쿠 프로이트 챗봇 API로 전송되는 데 동의합니다. (필수)")
