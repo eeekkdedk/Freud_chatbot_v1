@@ -703,10 +703,10 @@ def fmt_est(n_chars: int) -> str:
 def _wait_img(i: int) -> str:
     import base64
 
-    pth = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "loading", f"{i}.svg")
+    pth = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "loading", f"{i}.webp")
     try:
         with open(pth, "rb") as fh:
-            return "data:image/svg+xml;base64," + base64.b64encode(fh.read()).decode()
+            return "data:image/webp;base64," + base64.b64encode(fh.read()).decode()
     except Exception:
         return ""
 
@@ -747,7 +747,7 @@ def run_with_freud_quotes(text: str, target: str, keep: str):
             scene.markdown(
                 "<style>.kz{max-width:680px;margin:.6rem auto 0;border:1.5px solid #C0A353;border-radius:22px;overflow:hidden;"
                 "background:#fff;box-shadow:0 8px 26px rgba(120,90,40,.2)}"
-                ".kz img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;object-position:50% 22%;"
+                ".kz img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;object-position:50% 0%;"
                 "animation:kzin 5.2s ease-out both}"
                 "@keyframes kzin{0%{opacity:.25;transform:scale(1)}8%{opacity:1}100%{opacity:1;transform:scale(1.05)}}"
                 ".kz .cap{background:#fff;color:#1f1f24;text-align:center;font-weight:700;font-size:1.3rem;line-height:1.55;"
