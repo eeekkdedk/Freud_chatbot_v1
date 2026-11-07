@@ -74,6 +74,12 @@ html, body, [class*="css"], .stApp { font-family: 'Pretendard', -apple-system, s
 .fnd .ob .tg { background:#E7E9EE; color:#444; }
 .fnd .hy { color:#0D326F; font-size:1.02rem; font-weight:600; line-height:1.65; background:#EAF0FB; border-radius:8px; padding:.6rem .8rem; margin:.3rem 0 .2rem; }
 .fnd .hy .tg { background:#A40F16; color:#fff; }
+.cta { background:linear-gradient(135deg,#0D326F,#1F4FA0); border-radius:22px; padding:1.3rem 1.4rem; margin:1.6rem 0 .7rem; color:#fff; }
+.cta .cta-t { display:flex; gap:1rem; align-items:center; }
+.cta img { width:84px; height:auto; flex:0 0 auto; }
+.cta small { display:block; letter-spacing:.12em; font-weight:800; color:#FFD7DA; font-size:.7rem; }
+.cta b { display:block; font-size:1.3rem; margin:.15rem 0 .35rem; }
+.cta span { font-size:.92rem; opacity:.92; line-height:1.55; word-break:keep-all; }
 .kc { display:flex; align-items:center; gap:1rem; margin:.4rem 0 1.2rem; }
 .kc img { width:92px; height:auto; flex:0 0 auto; }
 .kc .bub { position:relative; background:#fff; border:2px solid #0D326F; border-radius:16px; padding:.9rem 1.1rem; font-size:1.08rem; font-weight:700; line-height:1.6; color:#0D326F; word-break:keep-all; }
@@ -1181,13 +1187,7 @@ def render_result(r: dict):
         for q in rq:
             st.markdown(f"- {txt(q)}")
 
-    st.markdown('<div class="sec">NEXT · CAREER</div>', unsafe_allow_html=True)
-    st.markdown("### 진로로 넘어가기 전에")
-    if r.get("career_bridge"):
-        st.write(txt(r["career_bridge"]))
-    for line in question_lines(r):
-        st.markdown(line)
-    st.caption("아래 입력창에 자유롭게 답해 주세요. 한 줄이어도 괜찮아요.")
+    # 진로 탐색 입구(큰 CTA)는 result 단계에서 버튼과 함께 그린다.
 
 
 def to_markdown(r: dict, target: str) -> str:
@@ -1232,7 +1232,7 @@ for k, v in (("stage", "landing"),("raw", ""), ("result", None), ("target", ""),
 
 
 def reset():
-    for k in ("stage", "raw", "result", "target", "chat", "src", "busy", "msgs", "stats", "slide"):
+    for k in ("stage", "raw", "result", "target", "chat", "src", "busy", "msgs", "stats", "slide", "view", "career_ans", "_pending"):
         st.session_state.pop(k, None)
     st.session_state.stage = "input"  # 다시 분석 시 랜딩 대신 바로 입력 화면으로
 
@@ -1443,9 +1443,86 @@ else:
         c2.button("다음 →" if _i < len(_slides) - 1 else "분석 리포트 보기 →", type="primary", on_click=_go, args=(1,), use_container_width=True)
         disclaimer()
         st.stop()
+    if st.session_state.get("view") == "career":
+        st.markdown('<div class="sec">STEP 3 · CAREER</div>', unsafe_allow_html=True)
+        if st.button("← 리포트로 돌아가기", key="back_report"):
+            st.session_state.view = "report"
+            st.session_state["_top"] = True
+            st.rerun()
+        st.markdown("## 진로 탐색")
+        st.markdown(
+            f'<div class="kc">{_mascot_html()}<div class="bub"><small>쿠로이트</small>'
+            f'{e(txt(r.get("career_bridge")) or "분석에서 본 나의 모습으로 진로를 같이 생각해 봐요.")}</div></div>',
+            unsafe_allow_html=True,
+        )
+        chat = st.session_state.chat
+        career_done = any(m["role"] == "assistant" and m.get("src") for m in chat)
+        qs = lst(r.get("follow_up_questions"))
+        ans = st.session_state.setdefault("career_ans", {})
+        if not career_done and qs:
+            st.markdown("##### 아래 질문에 골라서 답해 주세요 (직접 쓰셔도 돼요)")
+            for qi, q in enumerate(qs):
+                qt = txt(q.get("question")) if isinstance(q, dict) else txt(q)
+                opts = [txt(o) for o in lst(q.get("options"))] if isinstance(q, dict) else []
+                st.markdown(f'<div class="card"><b>Q{qi + 1}. {e(qt)}</b></div>', unsafe_allow_html=True)
+                if opts:
+                    cols = st.columns(len(opts))
+                    for oi, o in enumerate(opts):
+                        picked = ans.get(qi) == o
+                        if cols[oi].button(("✅ " if picked else "") + o, key=f"ans_{qi}_{oi}", use_container_width=True, type="primary" if picked else "secondary"):
+                            ans[qi] = o
+                            st.rerun()
+            if ans and st.button("답변 보내기 →", type="primary", use_container_width=True, key="send_ans"):
+                lines = []
+                for qi, o in sorted(ans.items()):
+                    q = qs[qi]
+                    lines.append(f"Q{qi + 1}. {txt(q.get('question')) if isinstance(q, dict) else txt(q)} → {o}")
+                st.session_state["_pending"] = "\n".join(lines)
+                st.rerun()
+        for m in chat:
+            with st.chat_message(m["role"]):
+                st.write(m["content"])
+                if m.get("src"):
+                    st.caption(f"호출: {m['src']}")
+        placeholder = "더 궁금한 점을 물어보세요" if career_done else "직접 답해도 좋아요 (한 줄이어도 괜찮아요)"
+        q_in = st.chat_input(placeholder)
+        q = st.session_state.pop("_pending", None) or q_in
+        if q:
+            chat.append({"role": "user", "content": q})
+            with st.chat_message("user"):
+                st.write(q)
+            ctx = json.dumps(r, ensure_ascii=False)[:9000]
+            msgs = [{"role": "system", "content": build_chat_system(ctx, career_done)}] + [
+                {"role": m["role"], "content": m["content"]} for m in chat[-10:]
+            ]
+            with st.chat_message("assistant"):
+                with st.spinner("생각 중…"):
+                    try:
+                        a_, csrc = call_llm(msgs)
+                    except Exception as ex:
+                        a_, csrc = f"답변을 가져오지 못했어요: {ex}", ""
+                st.write(a_)
+                if csrc:
+                    st.caption(f"호출: {csrc}")
+            chat.append({"role": "assistant", "content": a_, "src": csrc})
+            st.rerun()
+        disclaimer()
+        st.stop()
     st.markdown(f"## 당신의 대화 원형{' — ' + e(st.session_state.target) if st.session_state.target else ''}")
     render_result(r)
     st.markdown(f'<div style="text-align:right;color:#717171;font-size:.72rem">호출: {e(st.session_state.get("src", "-"))}</div>', unsafe_allow_html=True)
+
+    # ── 진로 탐색 입구 ──
+    st.markdown(
+        f'<div class="cta"><div class="cta-t">{_mascot_html()}<div><small>NEXT · CAREER</small>'
+        f'<b>이제 진로 이야기를 해볼까요?</b>'
+        f'<span>{e(txt(r.get("career_bridge")) or "지금까지 살펴본 나의 모습을 바탕으로 어울리는 진로 방향을 같이 찾아봐요.")}</span></div></div></div>',
+        unsafe_allow_html=True,
+    )
+    if st.button("🧭 진로 탐색 시작하기 →", type="primary", use_container_width=True, key="go_career"):
+        st.session_state.view = "career"
+        st.session_state["_top"] = True
+        st.rerun()
 
     st.download_button(
         "📥 리포트 저장 (.md)",
@@ -1453,35 +1530,6 @@ else:
         file_name="freud_report.md",
         use_container_width=True,
     )
-
-    st.markdown('<div class="sec">ASK FREUD</div>', unsafe_allow_html=True)
-    st.markdown("### 진로 탐색")
-    for m in st.session_state.chat:
-        with st.chat_message(m["role"]):
-            st.write(m["content"])
-            if m.get("src"):
-                st.caption(f"호출: {m['src']}")
-    career_done = any(m["role"] == "assistant" and m.get("src") for m in st.session_state.chat)
-    placeholder = "더 궁금한 점을 물어보세요" if career_done else "위 추가 질문에 편하게 답해 주세요 (한 줄이어도 괜찮아요)"
-    if q := st.chat_input(placeholder):
-        st.session_state.chat.append({"role": "user", "content": q})
-        with st.chat_message("user"):
-            st.write(q)
-        ctx = json.dumps(r, ensure_ascii=False)[:9000]
-        msgs = [{"role": "system", "content": build_chat_system(ctx, career_done)}] + [
-            {"role": m["role"], "content": m["content"]} for m in st.session_state.chat[-10:]
-        ]
-        with st.chat_message("assistant"):
-            with st.spinner("생각 중…"):
-                try:
-                    ans, csrc = call_llm(msgs)
-                except Exception as ex:
-                    ans, csrc = f"답변을 가져오지 못했어요: {ex}", ""
-            st.write(ans)
-            if csrc:
-                st.caption(f"호출: {csrc}")
-        st.session_state.chat.append({"role": "assistant", "content": ans, "src": csrc})
-
     if st.button("🔄 다시 분석하기", use_container_width=True):
         reset()
         st.rerun()
