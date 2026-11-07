@@ -787,40 +787,28 @@ def _icon_uri(name: str) -> str:
     return "data:image/svg+xml;base64," + base64.b64encode(svg.encode()).decode()
 
 
-def _tab_icon_css(pairs):
-    """탭 라벨 앞에 <img> 아이콘을 실제 이미지로 삽입한다. pairs: [(탭 글자, 아이콘 이름), ...]"""
-    import json
+_INPUT_TABS = [("paste", "직접 붙여넣기", "txt"), ("kakao", "카카오톡", "kakao"), ("insta", "인스타그램 DM", "sns"), ("chatku", "챗쿠 대화", "chatkhu")]
 
-    import streamlit.components.v1 as components
 
-    data = json.dumps({lbl: _icon_uri(n) for lbl, n in pairs})
-    components.html(
-        """<script>
-(function () {
-  var MAP = %s;
-  var doc = window.parent.document;
-  function apply() {
-    doc.querySelectorAll('button[role="tab"]').forEach(function (b) {
-      var t = (b.textContent || '').trim();
-      var src = MAP[t];
-      if (!src || b.querySelector('img.tabic')) return;
-      var im = doc.createElement('img');
-      im.className = 'tabic'; im.src = src; im.alt = '';
-      im.style.cssText = 'width:1.25em;height:1.25em;margin-right:.45em;vertical-align:middle;flex:none;object-fit:contain;';
-      b.insertBefore(im, b.firstChild);
-    });
-  }
-  apply();
-  try {
-    if (window.parent.__tabIconObs) window.parent.__tabIconObs.disconnect();
-    var obs = new MutationObserver(function () { apply(); });
-    obs.observe(doc.body, { childList: true, subtree: true });
-    window.parent.__tabIconObs = obs;
-  } catch (e) {}
-})();
-</script>""" % data,
-        height=0,
+def input_selector() -> str:
+    """아이콘 이미지 + 선택 버튼 4칸. 모바일에서도 한 줄로 유지한다."""
+    st.markdown(
+        "<style>.st-key-inrow [data-testid='stHorizontalBlock']{flex-wrap:nowrap!important;gap:.5rem!important}"
+        ".st-key-inrow [data-testid='stColumn']{min-width:0!important;flex:1 1 0!important}"
+        ".st-key-inrow button{padding:.35rem .2rem!important;white-space:nowrap}"
+        ".st-key-inrow button p{font-size:.82rem!important}"
+        ".inic{display:block;margin:0 auto .3rem;width:30px;height:30px;object-fit:contain}</style>",
+        unsafe_allow_html=True,
     )
+    cur = st.session_state.setdefault("in_tab", "paste")
+    with st.container(key="inrow"):
+        for col, (key, label, icon) in zip(st.columns(4), _INPUT_TABS):
+            with col:
+                st.markdown(f'<img class="inic" alt="" src="{_icon_uri(icon)}">', unsafe_allow_html=True)
+                if st.button(label, key=f"in_btn_{key}", type="primary" if key == cur else "secondary", use_container_width=True):
+                    st.session_state["in_tab"] = key
+                    st.rerun()
+    return st.session_state["in_tab"]
 
 
 @st.cache_data
@@ -1067,10 +1055,9 @@ elif st.session_state.stage == "input":
         st.rerun()
     hero()
     st.markdown('<div class="sec">INPUT</div>', unsafe_allow_html=True)
-    _tab_icon_css([("직접 붙여넣기", "txt"), ("카카오톡", "kakao"), ("인스타그램 DM", "sns"), ("챗쿠 대화", "chatkhu")])
-    tab1, tab2, tab3, tab4 = st.tabs(["직접 붙여넣기", "카카오톡", "인스타그램 DM", "챗쿠 대화"])
+    _sel = input_selector()
     texts = {"paste": "", "kakao": "", "insta": "", "chatku": ""}
-    with tab1:
+    if _sel == "paste":
         pasted = st.text_area(
             "대화 내용",
             height=240,
@@ -1080,7 +1067,7 @@ elif st.session_state.stage == "input":
         )
         st.caption(f"{len(pasted):,} / 200,000자 · 최소 {MIN_CHARS}자")
         texts["paste"] = pasted
-    with tab2:
+    if _sel == "kakao":
         _guide("kakao")
         # 모바일(iOS/Android) 파일 선택창은 확장자 필터(accept)를 엄격히 적용해 .txt가 회색으로 막히는 경우가 있어
         # type 제한을 두지 않고, 확장자는 아래에서 직접 검사한다.
@@ -1095,7 +1082,7 @@ elif st.session_state.stage == "input":
                 st.success(f"✅ {up.name} · {len(texts['kakao']):,}자를 불러왔어요.")
             else:
                 st.error("파일에서 텍스트를 읽지 못했어요. 카톡 '텍스트로 내보내기' 파일인지 확인하거나, '직접 붙여넣기'를 이용해 주세요.")
-    with tab3:
+    if _sel == "insta":
         _guide("instagram")
         ups = st.file_uploader("인스타그램 DM 파일", accept_multiple_files=True, label_visibility="collapsed", key="up_insta")
         st.caption("내보낸 .zip 또는 대화 폴더 안의 message_1.html 을 올려 주세요.")
@@ -1110,7 +1097,7 @@ elif st.session_state.stage == "input":
                 texts["insta"] = "\n\n".join(ig_to_text(convs[k]) for k in picked)
                 if texts["insta"].strip():
                     st.success(f"✅ {len(picked)}개 대화 · {len(texts['insta']):,}자를 불러왔어요.")
-    with tab4:
+    if _sel == "chatku":
         _guide("chatku")
         ups = st.file_uploader(
             "챗쿠 대화 파일", accept_multiple_files=True, label_visibility="collapsed", key="up_chatku"
