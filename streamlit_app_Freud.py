@@ -473,7 +473,8 @@ _GUIDES = {
 
 def _guide(key: str):
     g = _GUIDES[key]
-    with st.expander(f"📘 {g['title']} 가이드", expanded=False):
+    st.markdown(f"##### 📘 {g['title']} 가이드")
+    with st.container():
         for i, t in enumerate(g["steps"], 1):
             st.markdown(f"**{i}.** {t}")
         base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "guides", key)
