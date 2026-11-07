@@ -1154,7 +1154,7 @@ elif st.session_state.stage == "input":
             with st.expander("미리보기" + (" (챗쿠 답변 포함 · 분석에는 내 말만 사용)" if kind == "챗쿠 대화" else "")):
                 st.text(_pv_txt[:1500] + ("…" if len(_pv_txt) > 1500 else ""))
                 _gh = {"카카오톡 대화": "kakao.csv", "인스타그램 DM": "instagram.zip", "챗쿠 대화": "chatku.zip"}[kind]
-                st.markdown(f"📂 원본 파일 보기: [GitHub · assets/demo/{_gh}]({DEMO_REPO_URL}/{_gh})")
+                st.markdown(f"📂 전체 내용 보기: [GitHub · assets/demo/{_gh}]({DEMO_REPO_URL}/{_gh})")
         else:
             st.error("예시 데이터를 불러오지 못했어요.")
     input_text = next((texts[k] for k in ("demo", "kakao", "insta", "chatku", "paste") if texts[k].strip()), "")
