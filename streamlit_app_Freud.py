@@ -987,14 +987,9 @@ elif st.session_state.stage == "input":
         st.rerun()
     hero()
     st.markdown('<div class="sec">INPUT</div>', unsafe_allow_html=True)
-    mode = st.radio(
-        "입력 방식",
-        ["✍️ 직접 붙여넣기", "💬 카카오톡", "📸 인스타그램 DM", "🤖 챗쿠 대화"],
-        horizontal=True,
-        label_visibility="collapsed",
-    )
-    input_text = ""
-    if mode.startswith("✍️"):
+    tab1, tab2, tab3, tab4 = st.tabs(["✍️ 직접 붙여넣기", "💬 카카오톡", "📸 인스타그램 DM", "🤖 챗쿠 대화"])
+    texts = {"paste": "", "kakao": "", "insta": "", "chatku": ""}
+    with tab1:
         pasted = st.text_area(
             "대화 내용",
             height=240,
@@ -1003,8 +998,8 @@ elif st.session_state.stage == "input":
             label_visibility="collapsed",
         )
         st.caption(f"{len(pasted):,} / 200,000자 · 최소 {MIN_CHARS}자")
-        input_text = pasted
-    elif mode.startswith("💬"):
+        texts["paste"] = pasted
+    with tab2:
         _guide("kakao")
         # 모바일(iOS/Android) 파일 선택창은 확장자 필터(accept)를 엄격히 적용해 .txt가 회색으로 막히는 경우가 있어
         # type 제한을 두지 않고, 확장자는 아래에서 직접 검사한다.
@@ -1014,12 +1009,12 @@ elif st.session_state.stage == "input":
             _nm = up.name.lower()
             if not _nm.endswith((".txt", ".csv", ".md", ".zip")) and "." in _nm:
                 st.warning("텍스트(.txt) 파일이 아닌 것 같아요. 그래도 읽어 볼게요.")
-            input_text = read_upload(up)
-            if input_text.strip():
-                st.success(f"✅ {up.name} · {len(input_text):,}자를 불러왔어요.")
+            texts["kakao"] = read_upload(up)
+            if texts["kakao"].strip():
+                st.success(f"✅ {up.name} · {len(texts['kakao']):,}자를 불러왔어요.")
             else:
                 st.error("파일에서 텍스트를 읽지 못했어요. 카톡 '텍스트로 내보내기' 파일인지 확인하거나, '직접 붙여넣기'를 이용해 주세요.")
-    elif mode.startswith("📸"):
+    with tab3:
         _guide("instagram")
         ups = st.file_uploader("인스타그램 DM 파일", accept_multiple_files=True, label_visibility="collapsed", key="up_insta")
         st.caption("내보낸 .zip 또는 대화 폴더 안의 message_1.html 을 올려 주세요.")
@@ -1031,10 +1026,10 @@ elif st.session_state.stage == "input":
                 picked = st.multiselect(
                     "분석할 대화 선택", list(convs), default=list(convs), format_func=lambda k: f"{k} · {len(convs[k]):,}개 메시지"
                 )
-                input_text = "\n\n".join(ig_to_text(convs[k]) for k in picked)
-                if input_text.strip():
-                    st.success(f"✅ {len(picked)}개 대화 · {len(input_text):,}자를 불러왔어요.")
-    else:
+                texts["insta"] = "\n\n".join(ig_to_text(convs[k]) for k in picked)
+                if texts["insta"].strip():
+                    st.success(f"✅ {len(picked)}개 대화 · {len(texts['insta']):,}자를 불러왔어요.")
+    with tab4:
         _guide("chatku")
         ups = st.file_uploader(
             "챗쿠 대화 파일", accept_multiple_files=True, label_visibility="collapsed", key="up_chatku"
@@ -1049,9 +1044,10 @@ elif st.session_state.stage == "input":
                     "분석할 대화 선택", list(sess), default=list(sess), format_func=lambda k: f"{k} · {len(sess[k]):,}개 메시지"
                 )
                 with_ai = st.checkbox("AI의 답변도 함께 읽기 (기본: 내 말만 분석)", value=False)
-                input_text = chatku_to_text(sess, picked, memo, with_ai)
-                if input_text.strip():
-                    st.success(f"✅ {len(picked)}개 대화 · {len(input_text):,}자를 불러왔어요." + (" (메모리 포함)" if memo else ""))
+                texts["chatku"] = chatku_to_text(sess, picked, memo, with_ai)
+                if texts["chatku"].strip():
+                    st.success(f"✅ {len(picked)}개 대화 · {len(texts['chatku']):,}자를 불러왔어요." + (" (메모리 포함)" if memo else ""))
+    input_text = next((texts[k] for k in ("kakao", "insta", "chatku", "paste") if texts[k].strip()), "")
 
     terms_box()
     ok1 = st.checkbox("이용 안내를 읽었고, 대화가 챗쿠 프로이트 챗봇 API로 전송되는 데 동의합니다. (필수)")
