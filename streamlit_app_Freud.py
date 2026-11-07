@@ -74,6 +74,14 @@ html, body, [class*="css"], .stApp { font-family: 'Pretendard', -apple-system, s
 .fnd .ob .tg { background:#E7E9EE; color:#444; }
 .fnd .hy { color:#0D326F; font-size:1.02rem; font-weight:600; line-height:1.65; background:#EAF0FB; border-radius:8px; padding:.6rem .8rem; margin:.3rem 0 .2rem; }
 .fnd .hy .tg { background:#A40F16; color:#fff; }
+.cr h4 { margin:.1rem 0 .6rem; color:#0D326F; font-size:1.08rem; }
+.cr .cands { display:flex; gap:.4rem; flex-wrap:wrap; margin-bottom:.5rem; }
+.cr .cand { background:#EAF0FB; color:#0D326F; font-weight:800; border-radius:999px; padding:.25rem .8rem; font-size:.95rem; }
+.cr .why { margin:.3rem 0 .6rem; padding-left:1.1rem; color:#444; font-size:.92rem; line-height:1.6; }
+.cr .xp { background:#FFF6E0; border-radius:10px; padding:.55rem .8rem; font-size:.95rem; color:#5A4A10; line-height:1.6; }
+.cr .tg { display:inline-block; background:#E9A23B; color:#fff; font-size:.72rem; font-weight:800; border-radius:999px; padding:.05rem .5rem; margin-right:.4rem; }
+.qa { background:#F5F6FA; border-radius:10px; padding:.45rem .7rem; margin:.3rem 0; }
+.qa small { display:block; color:#717171; font-size:.78rem; } .qa b { color:#0D326F; font-size:.98rem; }
 .cta { background:linear-gradient(135deg,#0D326F,#1F4FA0); border-radius:22px; padding:1.3rem 1.4rem; margin:1.6rem 0 .7rem; color:#fff; }
 .cta .cta-t { display:flex; gap:1rem; align-items:center; }
 .cta img { width:84px; height:auto; flex:0 0 auto; }
@@ -697,10 +705,15 @@ CAREER_MODE = """[지금은 두 번째 답변이다] 사용자가 추가질문�
 - 가치 기준: 확인된 욕구를 구체적 가치로 바꾸고(예: '존중받고 싶다' → 전문성 인정/유명해짐/의견 존중/도움이 되는 존재), 포기하기 어려운 조건과 절충 가능한 조건을 나눈다.
 - 선택·실행: 탐색을 반복하며 결정을 미루는 패턴이 있으면 '추가 정보가 필요한 단계'와 '경험해볼 단계'로 나눈다.
 - 후보·경험: 흥미·강점·어려움을 활동 단위로 쪼개 후보를 만든다. 예를 들어 '설명하기를 즐긴다'고 곧바로 교사를 추천하지 않고, 설명 과정/이해하는 순간/자료 제작/인정 중 무엇이 좋은지 구분해 후보를 넓힌다.
-출력 형식(마크다운, 간결하게):
-### 학사 / ### 직업 / ### 삶의 가치관 세 소제목. 각 영역에 후보 1~3개, 근거(분석 결과·사용자 답변 인용), 검증해 볼 작은 경험 1개.
-마지막에 '다음 행동' 1개.
-답변이 짧아 정보가 부족하면 가능한 범위만 답하고, 어떤 정보가 있으면 더 정확해지는지 한 줄로 밝힌다. 특정 직업을 단정적으로 추천하지 않는다."""
+출력 형식: 아래 JSON만 출력한다(마크다운·코드블록·설명 금지). 화면에서 카드로 그려지므로 각 값은 짧게 쓴다.
+{"summary": "쿠로이트가 건네는 한 줄 요약(70자 이내)",
+ "areas": [
+  {"key": "학사", "candidates": ["후보 1", "후보 2"], "evidence": ["근거 1(분석 결과·사용자 답변을 짧게 인용)", "근거 2"], "experiment": "검증해 볼 작은 경험 1개"},
+  {"key": "직업", ...}, {"key": "삶의 가치관", ...}],
+ "unsure": "정보가 부족할 때만, 어떤 정보가 있으면 더 정확해지는지 한 줄 (없으면 빈 문자열)",
+ "next_action": "다음 행동 1개"}
+- areas는 학사 / 직업 / 삶의 가치관 순서의 3개이며, 후보는 영역마다 1~3개, 근거는 1~3개다.
+- 답변이 짧아 정보가 부족하면 가능한 범위만 채우고 unsure에 밝힌다. 특정 직업을 단정적으로 추천하지 않는다."""
 
 FOLLOWUP_MODE = """[지금은 후속 대화다] 진로 결과는 이미 제시했다. 사용자의 질문에 답한다.
 사용자가 새 정보를 주면 해당 부분을 수정해 알려 준다. 6문장 이내로 간결하게 답한다."""
@@ -1190,6 +1203,46 @@ def render_result(r: dict):
     # 진로 탐색 입구(큰 CTA)는 result 단계에서 버튼과 함께 그린다.
 
 
+def render_career(d: dict):
+    icons = {"학사": "🎓", "직업": "💼", "삶의 가치관": "🧭"}
+    if d.get("summary"):
+        st.markdown(f'<div class="kc">{_mascot_html()}<div class="bub"><small>쿠로이트 한마디</small>{e(txt(d["summary"]))}</div></div>', unsafe_allow_html=True)
+    for a in lst(d.get("areas")):
+        if not isinstance(a, dict):
+            continue
+        k = txt(a.get("key"))
+        cands = "".join(f'<span class="cand">{e(txt(c))}</span>' for c in lst(a.get("candidates")))
+        evs = "".join(f"<li>{e(txt(x))}</li>" for x in lst(a.get("evidence")))
+        xp = f'<div class="xp"><span class="tg">작은 경험</span>{e(txt(a.get("experiment")))}</div>' if a.get("experiment") else ""
+        st.markdown(
+            f'<div class="card cr"><h4>{icons.get(k, "•")} {e(k)}</h4><div class="cands">{cands}</div>'
+            f'<ul class="why">{evs}</ul>{xp}</div>',
+            unsafe_allow_html=True,
+        )
+    if d.get("unsure"):
+        st.caption("ℹ️ " + txt(d["unsure"]))
+    if d.get("next_action"):
+        st.markdown(
+            f'<div class="cta"><div class="cta-t"><div><small>NEXT ACTION</small><b>{e(txt(d["next_action"]))}</b></div></div></div>',
+            unsafe_allow_html=True,
+        )
+
+
+def render_msg(m: dict):
+    with st.chat_message(m["role"]):
+        if m.get("qa"):
+            st.markdown(
+                "".join(f'<div class="qa"><small>{e(q)}</small><b>{e(a)}</b></div>' for q, a in m["qa"]),
+                unsafe_allow_html=True,
+            )
+        elif m.get("data"):
+            render_career(m["data"])
+        else:
+            st.write(m["content"])
+        if m.get("src"):
+            st.caption(f"호출: {m['src']}")
+
+
 def to_markdown(r: dict, target: str) -> str:
     out = [f"# FREUD 분석 리포트 — {target or '전체'}", ""]
     if _comment(r):
@@ -1473,24 +1526,24 @@ else:
                             ans[qi] = o
                             st.rerun()
             if ans and st.button("답변 보내기 →", type="primary", use_container_width=True, key="send_ans"):
-                lines = []
+                qa = []
                 for qi, o in sorted(ans.items()):
                     q = qs[qi]
-                    lines.append(f"Q{qi + 1}. {txt(q.get('question')) if isinstance(q, dict) else txt(q)} → {o}")
-                st.session_state["_pending"] = "\n".join(lines)
+                    qa.append((f"Q{qi + 1}. " + (txt(q.get("question")) if isinstance(q, dict) else txt(q)), o))
+                st.session_state["_pending"] = qa
                 st.rerun()
         for m in chat:
-            with st.chat_message(m["role"]):
-                st.write(m["content"])
-                if m.get("src"):
-                    st.caption(f"호출: {m['src']}")
+            render_msg(m)
         placeholder = "더 궁금한 점을 물어보세요" if career_done else "직접 답해도 좋아요 (한 줄이어도 괜찮아요)"
         q_in = st.chat_input(placeholder)
-        q = st.session_state.pop("_pending", None) or q_in
+        pend = st.session_state.pop("_pending", None)
+        q = ("\n".join(f"{a} → {b}" for a, b in pend) if pend else q_in)
         if q:
-            chat.append({"role": "user", "content": q})
-            with st.chat_message("user"):
-                st.write(q)
+            um = {"role": "user", "content": q}
+            if pend:
+                um["qa"] = pend
+            chat.append(um)
+            render_msg(um)
             ctx = json.dumps(r, ensure_ascii=False)[:9000]
             msgs = [{"role": "system", "content": build_chat_system(ctx, career_done)}] + [
                 {"role": m["role"], "content": m["content"]} for m in chat[-10:]
@@ -1501,10 +1554,15 @@ else:
                         a_, csrc = call_llm(msgs)
                     except Exception as ex:
                         a_, csrc = f"답변을 가져오지 못했어요: {ex}", ""
-                st.write(a_)
+                dat = parse_json(a_) if (not career_done and csrc) else None
+                if not (isinstance(dat, dict) and dat.get("areas")):
+                    dat = None
+                    st.write(a_)
+                else:
+                    render_career(dat)
                 if csrc:
                     st.caption(f"호출: {csrc}")
-            chat.append({"role": "assistant", "content": a_, "src": csrc})
+            chat.append({"role": "assistant", "content": a_, "data": dat, "src": csrc})
             st.rerun()
         disclaimer()
         st.stop()
