@@ -664,7 +664,7 @@ def landing():
         st.session_state.stage = "input"
         st.rerun()
     st.markdown(
-        '<div class="foot">FREUD · 미래교육 AI 문제해결 챌린지 출품작<br>입력한 대화는 분석을 위해 외부 AI API로 전송되며, 분석 결과는 참고용입니다.</div>',
+        '<div class="foot">FREUD · 미래교육 AI 문제해결 챌린지 출품작<br>입력한 대화는 분석을 위해 챗쿠 프로이트 챗봇 API로 전송되며, 분석 결과는 참고용입니다.</div>',
         unsafe_allow_html=True,
     )
 
