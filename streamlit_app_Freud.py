@@ -488,7 +488,7 @@ def _guide(key: str):
                         _w, _h = _Im.open(pth).size
                     except Exception:
                         _w, _h = 1, 2
-                    st.image(pth, width=520 if _w > _h else 280)  # 가로 화면은 넓게, 모바일 세로 화면은 좁게
+                    st.image(pth, width=680 if _w > _h else 340)  # 가로 화면은 넓게, 모바일 세로 화면은 좁게
                     break
         st.caption(g["note"])
 
