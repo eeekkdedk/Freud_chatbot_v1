@@ -683,6 +683,22 @@ WAIT_LINES = [
 ]
 
 
+def est_time(n_chars: int):
+    """글자 수 기준 분석 소요 시간 추정(초). 응답 생성이 대부분이라 기본 시간 + 길이에 비례해 조금 늘어난다."""
+    k = min(n_chars, MAX_CHARS) / 1000
+    mid = 40 + 1.5 * k
+    return mid * 0.7, mid * 1.6
+
+
+def fmt_est(n_chars: int) -> str:
+    import math
+
+    lo, hi = est_time(n_chars)
+    if hi <= 75:
+        return f"약 {int(round(lo, -1))}~{int(round(hi, -1))}초"
+    return f"약 {max(1, round(lo / 60))}~{max(2, math.ceil(hi / 60))}분"
+
+
 def run_with_freud_quotes(text: str, target: str, keep: str):
     """분석을 백그라운드 스레드에서 돌리면서 기다리는 동안 멘트를 돌려가며 보여준다."""
     import random
@@ -716,7 +732,9 @@ def run_with_freud_quotes(text: str, target: str, keep: str):
         sec = int(time.time() - t0)
         slot.markdown(
             f'<div class="wait"><div class="em">{em}</div><div class="ln">{e(line)}</div>'
-            f'<div class="tm">쿠로이트가 분석 중… {sec}초 · 보통 1~3분 걸려요</div></div>',
+            f'<div class="tm">쿠로이트가 분석 중… {sec}초 · '
+            + (f"예상 {fmt_est(len(text))}" if sec <= est_time(len(text))[1] else "예상보다 조금 더 걸리고 있어요")
+            + "</div></div>",
             unsafe_allow_html=True,
         )
         th.join(1.0)
@@ -1180,7 +1198,7 @@ elif st.session_state.stage == "input":
 elif st.session_state.stage == "pick":
     text = st.session_state.raw
     st.markdown("## 누구를 분석할까요?")
-    st.caption(f"총 {len(text):,}자")
+    st.caption(f"총 {len(text):,}자 · ⏱ 예상 소요 시간 {fmt_est(len(text))} (길이에 따라 달라질 수 있어요)")
 
     busy = st.session_state.get("busy", False)
     target = st.text_input(
