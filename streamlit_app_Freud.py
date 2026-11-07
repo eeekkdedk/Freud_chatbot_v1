@@ -299,6 +299,26 @@ def _decode_bytes(raw: bytes) -> str:
     return raw.decode("utf-8", errors="ignore")
 
 
+def _kakao_csv_to_text(text: str) -> str:
+    """카카오톡 CSV(Date,User,Message)를 '이름: 내용' 줄로 바꾼다. 해당 형식이 아니면 원문 그대로."""
+    import csv
+    import io
+
+    head = text.lstrip("\ufeff").lstrip()[:200].lower()
+    if not head.startswith("date,user,message"):
+        return text
+    try:
+        rows = list(csv.reader(io.StringIO(text.lstrip("\ufeff"))))[1:]
+    except Exception:
+        return text
+    lines = []
+    for r in rows:
+        if len(r) >= 3 and r[2].strip():
+            msg = " ".join(r[2].split())
+            lines.append(f"{r[1].strip()}: {msg}" if r[1].strip() else msg)
+    return "\n".join(lines) if lines else text
+
+
 def read_upload(f) -> str:
     """업로드 파일을 텍스트로 변환. 모바일 카톡 내보내기는 .zip이나 확장자 없는 파일로 오기도 한다."""
     raw = f.getvalue()
@@ -313,10 +333,10 @@ def read_upload(f) -> str:
                 if not cands:
                     return ""
                 cands.sort(key=lambda n: z.getinfo(n).file_size, reverse=True)
-                return _decode_bytes(z.read(cands[0]))
+                return _kakao_csv_to_text(_decode_bytes(z.read(cands[0])))
         except Exception:
             return ""
-    return _decode_bytes(raw)
+    return _kakao_csv_to_text(_decode_bytes(raw))
 
 
 # ───────────────────────── 입력 종류별 파서 (카카오톡 · 인스타그램 DM · 챗쿠) ─────────────────────────
@@ -443,7 +463,7 @@ _GUIDES = {
             "분석하고 싶은 카카오톡 **채팅방**을 열고, 오른쪽 위 **메뉴(≡)** 를 눌러요.",
             "채팅방 정보 화면 오른쪽 위의 **설정(⚙)** 을 눌러요.",
             "**채팅방 데이터** 항목의 **대화 내용 내보내기**를 눌러요.",
-            "**텍스트 메시지만 보내기**를 선택해 메일로 받은 뒤, 저장된 **.txt 파일**(또는 .zip)을 아래에 올려 주세요. (사진·동영상은 필요 없어요)",
+            "**텍스트 메시지만 보내기**를 선택해 메일로 받은 뒤, 받은 **.csv 또는 .txt 파일**(.zip도 가능)을 아래에 올려 주세요. (사진·동영상은 필요 없어요)",
         ],
         "note": "단체방이라면 분석할 사람의 이름이 대화에 그대로 보이게 내보내 주세요.",
     },
@@ -789,7 +809,7 @@ def landing():
         '<div class="lp-src">지원하는 입력 '
         f'<span>{_icon("kakao")}카카오톡</span><span>{_icon("sns")}SNS·DM·댓글</span>'
         f'<span class="off" title="아직 지원하지 않아요">{_icon("chatbot")}ChatGPT<em>준비 중</em></span>'
-        f'<span>{_icon("chatkhu")}챗쿠</span><span>{_icon("txt")}.txt 파일</span></div>',
+        f'<span>{_icon("chatkhu")}챗쿠</span><span>{_icon("txt")}.csv·.txt 파일</span></div>',
         unsafe_allow_html=True,
     )
 
@@ -805,7 +825,7 @@ def landing():
         """
 <div class="sechead">이렇게 진행돼요</div>
 <div class="steps">
-<div class="step"><div class="n">STEP 1</div><div class="t">대화 붙여넣기</div><div class="d">텍스트를 붙여넣거나 .txt 파일을 올려요. 연락처·주민번호는 전송 전에 자동으로 가려져요.</div></div>
+<div class="step"><div class="n">STEP 1</div><div class="t">대화 붙여넣기</div><div class="d">텍스트를 붙여넣거나 .csv·.txt 파일을 올려요. 연락처·주민번호는 전송 전에 자동으로 가려져요.</div></div>
 <div class="step"><div class="n">STEP 2</div><div class="t">나를 읽는 분석</div><div class="d">자주 쓰는 표현, 반복 질문, 감정을 다루는 방식에서 경향과 나의 특성을 찾아요.</div></div>
 <div class="step"><div class="n">STEP 3</div><div class="t">진로 실마리</div><div class="d">분석 결과를 바탕으로 어울릴 진로 방향과 다음 행동을 제안하고, 이어서 대화로 더 물어볼 수 있어요.</div></div>
 </div>
@@ -1012,11 +1032,11 @@ elif st.session_state.stage == "input":
         # 모바일(iOS/Android) 파일 선택창은 확장자 필터(accept)를 엄격히 적용해 .txt가 회색으로 막히는 경우가 있어
         # type 제한을 두지 않고, 확장자는 아래에서 직접 검사한다.
         up = st.file_uploader("카카오톡 대화 파일", label_visibility="collapsed", key="up_kakao")
-        st.caption("카카오톡에서 내보낸 .txt 파일(또는 .zip)을 올려 주세요.")
+        st.caption("카카오톡에서 내보낸 .csv 또는 .txt 파일(.zip도 가능)을 올려 주세요.")
         if up is not None:
             _nm = up.name.lower()
             if not _nm.endswith((".txt", ".csv", ".md", ".zip")) and "." in _nm:
-                st.warning("텍스트(.txt) 파일이 아닌 것 같아요. 그래도 읽어 볼게요.")
+                st.warning("카톡 내보내기 파일(.csv/.txt)이 아닌 것 같아요. 그래도 읽어 볼게요.")
             texts["kakao"] = read_upload(up)
             if texts["kakao"].strip():
                 st.success(f"✅ {up.name} · {len(texts['kakao']):,}자를 불러왔어요.")
