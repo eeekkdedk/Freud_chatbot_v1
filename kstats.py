@@ -346,12 +346,12 @@ def compute(msgs: list, mask=lambda s: s) -> dict:
         body = ""
         for n, mm in longest:
             full = mask(mm["text"])
-            head, rest = (full[:170], full[170:]) if len(full) > 190 else (full, "")
+            head, rest = (full[:70].rstrip() + "…", full) if len(full) > 90 else (full, "")
             dt = f'<div class="ks-sub">{_e(_kdate(mm["dt"]))}</div>' if mm["dt"] else ""
             bub = (
                 f'<div class="ks-b"><div class="ks-n" style="color:{ncol[n]}">{_e(n)}</div>'
                 f'<span class="ks-t">{_e(head)}</span>'
-                + (f'<details><summary>더 보기</summary><span class="ks-t">{_e(rest)}</span></details>' if rest else "")
+                + (f'<details><summary>전체 보기</summary><span class="ks-t">{_e(rest)}</span></details>' if rest else "")
                 + "</div>"
             )
             body += f'<div class="ks-card c-beige"><div class="ks-h">{_e(n)}</div><div class="ks-num">{len(mm["text"])}<small>자</small></div>{dt}{bub}</div>'
