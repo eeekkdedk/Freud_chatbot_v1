@@ -788,12 +788,18 @@ def _icon_uri(name: str) -> str:
 
 
 def _tab_icon_css(names):
-    rules = "".join(
-        f'div[data-baseweb="tab-list"] button[role="tab"]:nth-of-type({i}) p::before{{content:"";display:inline-block;'
-        f'width:1.15em;height:1.15em;margin-right:.45em;vertical-align:-.2em;background:url("{_icon_uri(n)}") center/contain no-repeat;}}'
-        for i, n in enumerate(names, 1)
-    )
-    st.markdown(f"<style>{rules}</style>", unsafe_allow_html=True)
+    rules = ""
+    for i, n in enumerate(names, 1):
+        sel = f'button[role="tab"]:nth-child({i})::before, button[data-baseweb="tab"]:nth-child({i})::before'
+        rules += (
+            f'{sel}{{content:"";display:inline-block;flex:none;width:1.2em;height:1.2em;margin-right:.5em;'
+            f'vertical-align:middle;background:url("{_icon_uri(n)}") center/contain no-repeat;}}'
+        )
+    css = f"<style>{rules}</style>"
+    if hasattr(st, "html"):
+        st.html(css)
+    else:
+        st.markdown(css, unsafe_allow_html=True)
 
 
 @st.cache_data
