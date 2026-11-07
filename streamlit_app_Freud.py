@@ -514,8 +514,7 @@ def load_demo(kind: str) -> str:
         if kind == "인스타그램 DM":
             convs = read_instagram([_LocalFile(os.path.join(base, "instagram.zip"))])
             return "\n\n".join(ig_to_text(convs[k]) for k in convs)
-        d = os.path.join(base, "chatku")
-        sess, memo = read_chatku([_LocalFile(os.path.join(d, n)) for n in sorted(os.listdir(d))])
+        sess, memo = read_chatku([_LocalFile(os.path.join(base, "chatku.zip"))])
         return chatku_to_text(sess, list(sess), memo, False)
     except Exception:
         return ""
