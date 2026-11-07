@@ -463,10 +463,10 @@ _GUIDES = {
     "chatku": {
         "title": "챗쿠(ChatKHU) 대화 내보내기",
         "steps": [
-            "챗쿠에서 **내 대화 데이터를 내보내기** 해요.",
-            "받은 `factchat_export_…` 폴더가 생겨요.",
-            "그 안에서 **conversations.ndjson** 파일과 **memory 폴더**만 골라요. (다른 파일은 용량이 커서 올릴 수 없어요)",
-            "두 가지를 아래에 함께 올려 주세요. (memory 폴더는 안의 .md 파일을 올리거나 폴더를 압축해서 올려도 돼요)",
+            "챗쿠 화면 **오른쪽 위의 프로필 아이콘**을 누르고 **마이페이지**로 들어가요.",
+            "왼쪽 메뉴에서 **데이터 관리**를 선택해요. **데이터 내보내기**에서 **기간**을 고른 뒤 **내보내기**를 눌러요. (기간은 대화에만 적용되고, 비워 두면 최근 30일이에요)",
+            "내 대화·파일·메모리·프로젝트가 ZIP 하나로 내려받아져요. 압축을 풀면 `factchat_export_…` 폴더가 나와요.",
+            "그 폴더 안에서 **conversations.ndjson** 파일과 **memory 폴더**만 골라 아래에 올려 주세요. (다른 파일은 용량이 커서 올릴 수 없어요. memory 폴더는 안의 .md 파일을 올리거나 폴더를 압축해서 올려도 돼요)",
         ],
         "note": "올린 뒤 분석할 대화를 고를 수 있어요. AI의 답변은 기본적으로 제외하고 내 말만 분석해요.",
     },
@@ -482,7 +482,13 @@ def _guide(key: str):
             for ext in ("jpg", "jpeg", "png", "webp"):  # 단계 번호와 같은 이름의 이미지(1.jpg …)가 있으면 그 단계 아래에 표시
                 pth = os.path.join(base, f"{i}.{ext}")
                 if os.path.exists(pth):
-                    st.image(pth, width=280)
+                    try:
+                        from PIL import Image as _Im
+
+                        _w, _h = _Im.open(pth).size
+                    except Exception:
+                        _w, _h = 1, 2
+                    st.image(pth, width=520 if _w > _h else 280)  # 가로 화면은 넓게, 모바일 세로 화면은 좁게
                     break
         st.caption(g["note"])
 
