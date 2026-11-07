@@ -506,7 +506,7 @@ class _LocalFile:
 
 
 @st.cache_data
-def load_demo(kind: str) -> str:
+def load_demo(kind: str, with_ai: bool = False) -> str:
     base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "demo")
     try:
         if kind == "카카오톡 대화":
@@ -515,7 +515,7 @@ def load_demo(kind: str) -> str:
             convs = read_instagram([_LocalFile(os.path.join(base, "instagram.zip"))])
             return "\n\n".join(ig_to_text(convs[k]) for k in convs)
         sess, memo = read_chatku([_LocalFile(os.path.join(base, "chatku.zip"))])
-        return chatku_to_text(sess, list(sess), memo, False)
+        return chatku_to_text(sess, list(sess), memo, with_ai)
     except Exception:
         return ""
 
@@ -1149,8 +1149,9 @@ elif st.session_state.stage == "input":
         texts["demo"] = load_demo(kind)
         if texts["demo"].strip():
             st.success(f"✅ 예시 데이터 · {len(texts['demo']):,}자를 불러왔어요.")
-            with st.expander("미리보기"):
-                st.text(texts["demo"][:1200] + ("…" if len(texts["demo"]) > 1200 else ""))
+            _pv_txt = load_demo(kind, True) if kind == "챗쿠 대화" else texts["demo"]
+            with st.expander("미리보기" + (" (챗쿠 답변 포함 · 분석에는 내 말만 사용)" if kind == "챗쿠 대화" else "")):
+                st.text(_pv_txt[:1500] + ("…" if len(_pv_txt) > 1500 else ""))
         else:
             st.error("예시 데이터를 불러오지 못했어요.")
     input_text = next((texts[k] for k in ("demo", "kakao", "insta", "chatku", "paste") if texts[k].strip()), "")
