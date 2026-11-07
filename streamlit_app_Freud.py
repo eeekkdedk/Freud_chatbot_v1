@@ -772,6 +772,31 @@ def _icon(name: str) -> str:
 
 
 @st.cache_data
+def _icon_uri(name: str) -> str:
+    """첫 화면 칩과 같은 아이콘을 CSS background용 data URI로 반환."""
+    import base64
+
+    base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "icons")
+    for ext, mime in (("svg", "image/svg+xml"), ("png", "image/png")):
+        try:
+            with open(os.path.join(base, f"{name}.{ext}"), "rb") as fh:
+                return f"data:{mime};base64,{base64.b64encode(fh.read()).decode()}"
+        except Exception:
+            continue
+    svg = _ICONS[name].replace('<svg class="ic"', '<svg xmlns="http://www.w3.org/2000/svg"', 1)
+    return "data:image/svg+xml;base64," + base64.b64encode(svg.encode()).decode()
+
+
+def _tab_icon_css(names):
+    rules = "".join(
+        f'div[data-baseweb="tab-list"] button[role="tab"]:nth-of-type({i}) p::before{{content:"";display:inline-block;'
+        f'width:1.15em;height:1.15em;margin-right:.45em;vertical-align:-.2em;background:url("{_icon_uri(n)}") center/contain no-repeat;}}'
+        for i, n in enumerate(names, 1)
+    )
+    st.markdown(f"<style>{rules}</style>", unsafe_allow_html=True)
+
+
+@st.cache_data
 def _version_label() -> str:
     """배포된 커밋 기준 버전 표기: 'update 2026-11-08 05:11 KST · 3ffe96e'. git을 못 읽으면 파일 수정 시각으로 대체."""
     import subprocess
@@ -1015,7 +1040,8 @@ elif st.session_state.stage == "input":
         st.rerun()
     hero()
     st.markdown('<div class="sec">INPUT</div>', unsafe_allow_html=True)
-    tab1, tab2, tab3, tab4 = st.tabs(["✍️ 직접 붙여넣기", "💬 카카오톡", "📸 인스타그램 DM", "🤖 챗쿠 대화"])
+    _tab_icon_css(["txt", "kakao", "sns", "chatkhu"])
+    tab1, tab2, tab3, tab4 = st.tabs(["직접 붙여넣기", "카카오톡", "인스타그램 DM", "챗쿠 대화"])
     texts = {"paste": "", "kakao": "", "insta": "", "chatku": ""}
     with tab1:
         pasted = st.text_area(
