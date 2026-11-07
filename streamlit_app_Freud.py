@@ -450,11 +450,13 @@ _GUIDES = {
     "instagram": {
         "title": "인스타그램 DM 내보내기",
         "steps": [
-            "인스타그램 **설정 → 계정 센터 → 내 정보 및 권한 → 내 정보 다운로드**로 들어가요.",
-            "**정보 맞춤 설정**에서 **메시지**만 선택해요. (다른 항목까지 받으면 파일이 너무 커져요)",
-            "파일 형식은 **HTML**로 받고, 기간은 필요한 만큼 고르세요.",
-            "받은 폴더/압축 파일(`instagram-아이디-날짜-코드`) 안에서 **your_instagram_activity → messages → inbox**를 열면 대화 상대별 폴더가 있어요.",
-            "분석할 상대의 폴더 안 **message_1.html**(또는 전체 .zip)을 아래에 올려 주세요.",
+            "인스타그램 앱에서 **프로필 화면 오른쪽 위의 ≡ 메뉴**를 눌러요.",
+            "**설정 및 활동**에서 **Meta 계정**을 눌러요.",
+            "Meta 계정 화면에서 **내 정보 및 권한**을 눌러요.",
+            "**내 정보 내보내기**를 눌러요.",
+            "내보낼 위치는 **기기로 내보내기**를 골라요.",
+            "**정보 맞춤 설정**에서 **메시지만** 선택하고, **기간**을 고른 뒤 **형식은 HTML**로 설정하고 **내보내기 시작**을 눌러요. (다른 항목까지 받으면 파일이 너무 커져요)",
+            "다운로드가 끝나면 받은 `instagram-아이디-날짜-코드` 파일 안의 **your_instagram_activity → messages → inbox**에서 대화 상대별 폴더를 확인할 수 있어요. 분석할 상대의 폴더 안 **message_1.html**(또는 전체 .zip)을 아래에 올려 주세요.",
         ],
         "note": "개별 대화만 따로 내려받는 기능은 없어요. 원하는 대화의 폴더(message_1.html)만 골라 올려도 돼요. 올린 뒤 분석할 대화를 고를 수 있어요.",
     },
@@ -474,18 +476,15 @@ _GUIDES = {
 def _guide(key: str):
     g = _GUIDES[key]
     st.markdown(f"##### 📘 {g['title']} 가이드")
-    with st.container():
-        for i, t in enumerate(g["steps"], 1):
-            st.markdown(f"**{i}.** {t}")
-        base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "guides", key)
-        imgs = sorted(
-            os.path.join(base, n) for n in (os.listdir(base) if os.path.isdir(base) else []) if n.lower().endswith((".png", ".jpg", ".jpeg", ".webp"))
-        )
-        if imgs:
-            cols = st.columns(min(len(imgs), 3))
-            for i, pth in enumerate(imgs):
-                cols[i % len(cols)].image(pth, caption=f"STEP {i + 1}", use_container_width=True)
-        st.caption(g["note"])
+    base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "guides", key)
+    for i, t in enumerate(g["steps"], 1):
+        st.markdown(f"**{i}.** {t}")
+        for ext in ("jpg", "jpeg", "png", "webp"):  # 단계 번호와 같은 이름의 이미지(1.jpg …)가 있으면 그 단계 아래에 표시
+            pth = os.path.join(base, f"{i}.{ext}")
+            if os.path.exists(pth):
+                st.image(pth, width=280)
+                break
+    st.caption(g["note"])
 
 
 def fit_length(text: str, keep: str) -> str:
