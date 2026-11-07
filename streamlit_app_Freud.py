@@ -475,16 +475,16 @@ _GUIDES = {
 
 def _guide(key: str):
     g = _GUIDES[key]
-    st.markdown(f"##### 📘 {g['title']} 가이드")
     base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "guides", key)
-    for i, t in enumerate(g["steps"], 1):
-        st.markdown(f"**{i}.** {t}")
-        for ext in ("jpg", "jpeg", "png", "webp"):  # 단계 번호와 같은 이름의 이미지(1.jpg …)가 있으면 그 단계 아래에 표시
-            pth = os.path.join(base, f"{i}.{ext}")
-            if os.path.exists(pth):
-                st.image(pth, width=280)
-                break
-    st.caption(g["note"])
+    with st.expander(f"📘 {g['title']} 가이드", expanded=False):
+        for i, t in enumerate(g["steps"], 1):
+            st.markdown(f"**{i}.** {t}")
+            for ext in ("jpg", "jpeg", "png", "webp"):  # 단계 번호와 같은 이름의 이미지(1.jpg …)가 있으면 그 단계 아래에 표시
+                pth = os.path.join(base, f"{i}.{ext}")
+                if os.path.exists(pth):
+                    st.image(pth, width=280)
+                    break
+        st.caption(g["note"])
 
 
 def fit_length(text: str, keep: str) -> str:
