@@ -554,6 +554,7 @@ _ICONS = {
     "kakao": '<svg class="ic" viewBox="0 0 24 24"><path d="M12 3.5c-5 0-9 3.2-9 7.2 0 2.5 1.6 4.7 4 6l-.9 3.3 3.9-2.4c.6.1 1.3.2 2 .2 5 0 9-3.2 9-7.2S17 3.5 12 3.5z" fill="#0D326F"/><circle cx="8" cy="10.8" r="1.2" fill="#fff"/><circle cx="12" cy="10.8" r="1.2" fill="#fff"/><circle cx="16" cy="10.8" r="1.2" fill="#fff"/></svg>',
     "sns": '<svg class="ic" viewBox="0 0 24 24"><path d="M3 11.5 21 3l-6.500 18-3.2-7.300z" fill="#A40F16"/><path d="M11.3 13.7 21 3" stroke="#fff" stroke-width="1.4" fill="none" stroke-linecap="round"/></svg>',
     "chatbot": '<svg class="ic" viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="12" rx="4" fill="#717171"/><circle cx="9" cy="14" r="1.7" fill="#fff"/><circle cx="15" cy="14" r="1.7" fill="#fff"/><path d="M12 8V5" stroke="#717171" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="4.2" r="1.5" fill="#C0A353"/><path d="M2 13v3M22 13v3" stroke="#717171" stroke-width="1.6" stroke-linecap="round"/></svg>',
+    "chatkhu": '<svg class="ic" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="15" rx="6" fill="#A40F16"/><rect x="6" y="9" width="12" height="9" rx="4" fill="#F9D9B0"/><circle cx="9.500" cy="13" r="1" fill="#222"/><circle cx="14.500" cy="13" r="1" fill="#222"/><path d="M8 6 6.500 3M16 6l1.500-3" stroke="#A40F16" stroke-width="1.400" stroke-linecap="round"/></svg>',
     "txt": '<svg class="ic" viewBox="0 0 24 24"><path d="M6 2.5h8l5 5V20a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 20V4A1.5 1.5 0 0 1 6 2.5z" fill="#C0A353"/><path d="M14 2.5v5h5" fill="#e6d5a3"/><path d="M8 12h8M8 15h8M8 18h5" stroke="#fff" stroke-width="1.3" stroke-linecap="round"/></svg>',
 }
 
@@ -590,7 +591,7 @@ def landing():
     st.markdown(
         '<div class="lp-src">지원하는 입력 '
         f'<span>{_icon("kakao")}카카오톡</span><span>{_icon("sns")}SNS·DM·댓글</span>'
-        f'<span>{_icon("chatbot")}ChatGPT 등 챗봇</span><span>{_icon("txt")}.txt 파일</span></div>',
+        f'<span>{_icon("chatbot")}ChatGPT</span><span>{_icon("chatkhu")}챗쿠</span><span>{_icon("txt")}.txt 파일</span></div>',
         unsafe_allow_html=True,
     )
 
