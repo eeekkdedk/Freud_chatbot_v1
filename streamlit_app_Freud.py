@@ -80,7 +80,6 @@ html, body, [class*="css"], .stApp { font-family: 'Pretendard', -apple-system, s
 .lp-src span.off { opacity:.55; border-style:dashed; }
 .lp-src span.off .ic { filter:grayscale(1); }
 .lp-src span.off em { font-style:normal; font-size:.62rem; color:#8a8a90; background:#ececef; border-radius:999px; padding:.05rem .4rem; margin-left:.1rem; }
-.lp-src-note { text-align:center; color:#a0a0a6; font-size:.68rem; margin:.15rem 0 0; }
 .lp-src span { display:inline-flex; align-items:center; gap:.35rem; background:#f6f6f8; border:1px solid #e3e3e6; border-radius:999px; padding:.2rem .7rem; margin:.15rem .1rem; color:#3f4450; }
 .marq { overflow:hidden; margin:.4rem -1rem 0; -webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent); mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent); }
 .marq .track2 { display:flex; gap:.8rem; width:max-content; animation:scroll 38s linear infinite; }
@@ -616,8 +615,7 @@ def landing():
         '<div class="lp-src">지원하는 입력 '
         f'<span>{_icon("kakao")}카카오톡</span><span>{_icon("sns")}SNS·DM·댓글</span>'
         f'<span class="off" title="아직 지원하지 않아요">{_icon("chatbot")}ChatGPT<em>준비 중</em></span>'
-        f'<span>{_icon("chatkhu")}챗쿠</span><span>{_icon("txt")}.txt 파일</span></div>'
-        '<div class="lp-src-note">※ ChatGPT 대화 분석은 아직 지원하지 않아요 (준비 중)</div>',
+        f'<span>{_icon("chatkhu")}챗쿠</span><span>{_icon("txt")}.txt 파일</span></div>',
         unsafe_allow_html=True,
     )
 
