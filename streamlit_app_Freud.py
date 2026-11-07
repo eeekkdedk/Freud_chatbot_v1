@@ -699,6 +699,18 @@ def fmt_est(n_chars: int) -> str:
     return f"약 {max(1, round(lo / 60))}~{max(2, math.ceil(hi / 60))}분"
 
 
+@st.cache_data
+def _wait_img(i: int) -> str:
+    import base64
+
+    pth = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "loading", f"{i}.jpg")
+    try:
+        with open(pth, "rb") as fh:
+            return "data:image/jpeg;base64," + base64.b64encode(fh.read()).decode()
+    except Exception:
+        return ""
+
+
 def run_with_freud_quotes(text: str, target: str, keep: str):
     """분석을 백그라운드 스레드에서 돌리면서 기다리는 동안 멘트를 돌려가며 보여준다."""
     import random
@@ -725,21 +737,36 @@ def run_with_freud_quotes(text: str, target: str, keep: str):
     order = list(range(len(WAIT_LINES)))
     random.shuffle(order)
     order = [0] + [i for i in order if i != 0]  # 첫 멘트는 항상 소파 인사
-    slot = st.empty()
+    scene, clock = st.empty(), st.empty()
     t0, tick = time.time(), 0
+    lo, hi = est_time(len(text))
     while th.is_alive():
-        em, line = WAIT_LINES[order[(tick // 5) % len(order)]]  # 5초마다 멘트 교체
+        if tick % 5 == 0:  # 5초마다 장면(쿠로이트 작업 컷)과 멘트를 함께 교체
+            n = tick // 5
+            em, line = WAIT_LINES[order[n % len(order)]]
+            scene.markdown(
+                f"<style>.kz{{position:relative;max-width:460px;margin:.4rem auto 0;border:1.5px solid #C0A353;"
+                f"border-radius:20px;overflow:hidden;background:#e9dcc3;box-shadow:0 6px 22px rgba(120,90,40,.18)}}"
+                f".kz img{{display:block;width:100%;animation:kzin 5.2s ease-out both}}"
+                f"@keyframes kzin{{0%{{opacity:0;transform:scale(1)}}12%{{opacity:1}}100%{{opacity:1;transform:scale(1.06)}}}}"
+                f".kz .cap{{position:absolute;left:0;right:0;bottom:0;padding:2.4rem 1rem .85rem;text-align:center;color:#fff;"
+                f"font-weight:700;font-size:.95rem;line-height:1.45;background:linear-gradient(transparent,rgba(35,22,14,.92) 55%);"
+                f"text-shadow:0 1px 3px rgba(0,0,0,.5);word-break:keep-all}}"
+                f".kzt{{text-align:center;color:#7a7a80;font-size:.82rem;margin-top:.6rem}}</style>"
+                f'<div class="kz"><img alt="" src="{_wait_img(n % 4 + 1)}"><div class="cap">{em} {e(line)}</div></div>',
+                unsafe_allow_html=True,
+            )
         sec = int(time.time() - t0)
-        slot.markdown(
-            f'<div class="wait"><div class="em">{em}</div><div class="ln">{e(line)}</div>'
-            f'<div class="tm">쿠로이트가 분석 중… {sec}초 · '
-            + (f"예상 {fmt_est(len(text))}" if sec <= est_time(len(text))[1] else "예상보다 조금 더 걸리고 있어요")
-            + "</div></div>",
+        clock.markdown(
+            f'<div class="kzt">쿠로이트가 분석 중… {sec}초 · '
+            + (f"예상 {fmt_est(len(text))}" if sec <= hi else "예상보다 조금 더 걸리고 있어요")
+            + "</div>",
             unsafe_allow_html=True,
         )
         th.join(1.0)
         tick += 1
-    slot.empty()
+    scene.empty()
+    clock.empty()
     if "err" in box:
         raise box["err"]
     return box["out"]
