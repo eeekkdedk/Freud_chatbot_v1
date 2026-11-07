@@ -1307,6 +1307,44 @@ def to_markdown(r: dict, target: str) -> str:
     return "\n".join(out)
 
 
+def career_markdown(chat: list) -> str:
+    out = ["", "## 진로 탐색 기록"]
+    for m in chat:
+        if m["role"] == "user":
+            if m.get("qa"):
+                out += [f"- **{q}** → {a}" for q, a in m["qa"]]
+            else:
+                out.append(f"- 나: {m['content']}")
+            continue
+        d = m.get("data")
+        if not d:
+            out += ["", f"> {m['content']}", ""]
+            continue
+        if d.get("summary"):
+            out += ["", f"> 쿠로이트 한마디: {txt(d['summary'])}"]
+        for a in lst(d.get("areas")):
+            if not isinstance(a, dict):
+                continue
+            out += ["", f"### {txt(a.get('key'))}", "- 후보: " + " / ".join(txt(c) for c in lst(a.get("candidates")))]
+            out += [f"- 근거: {txt(x)}" for x in lst(a.get("evidence"))]
+            if a.get("experiment"):
+                out.append(f"- 작은 경험: {txt(a['experiment'])}")
+        if d.get("unsure"):
+            out += ["", f"※ {txt(d['unsure'])}"]
+        if d.get("next_action"):
+            out += ["", f"**다음 행동**: {txt(d['next_action'])}"]
+        ag = m.get("agents") or []
+        if ag:
+            out.append(f"(참고한 에이전트: {', '.join(ag)})")
+    return "\n".join(out)
+
+
+def go_home():
+    for k in ("stage", "raw", "result", "target", "chat", "src", "busy", "msgs", "stats", "slide", "view", "career_ans", "_pending"):
+        st.session_state.pop(k, None)
+    st.session_state.stage = "landing"
+
+
 def disclaimer():
     st.markdown(
         '<div class="disc">본 결과는 AI가 대화 텍스트만으로 생성한 참고용 해석이며, 심리 검사·진단·의료·법률 자문을 대신하지 않습니다. '
@@ -1571,6 +1609,29 @@ else:
                 st.rerun()
         for m in chat:
             render_msg(m)
+        if career_done:
+            st.markdown(
+                f'<div class="cta"><div class="cta-t">{_mascot_html()}<div><small>THE END</small>'
+                '<b>여기까지 함께해 주셔서 고마워요</b>'
+                '<span>리포트와 진로 탐색 기록을 저장해 두고, 시간이 지난 뒤 다시 읽어 보세요. 더 궁금한 건 아래 입력창에 이어서 물어봐도 돼요.</span></div></div></div>',
+                unsafe_allow_html=True,
+            )
+            st.download_button(
+                "📥 리포트 + 진로 탐색 기록 저장 (.md)",
+                to_markdown(r, st.session_state.target) + "\n" + career_markdown(chat),
+                file_name="freud_report_career.md",
+                use_container_width=True,
+                type="primary",
+                key="dl_all",
+            )
+            f1, f2 = st.columns(2)
+            if f1.button("📄 리포트 다시 보기", use_container_width=True, key="to_report2"):
+                st.session_state.view = "report"
+                st.session_state["_top"] = True
+                st.rerun()
+            if f2.button("🏠 처음 페이지로", use_container_width=True, key="go_home"):
+                go_home()
+                st.rerun()
         placeholder = "더 궁금한 점을 물어보세요" if career_done else "직접 답해도 좋아요 (한 줄이어도 괜찮아요)"
         q_in = st.chat_input(placeholder)
         pend = st.session_state.pop("_pending", None)
