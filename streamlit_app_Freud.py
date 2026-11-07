@@ -319,6 +319,174 @@ def read_upload(f) -> str:
     return _decode_bytes(raw)
 
 
+# ───────────────────────── 입력 종류별 파서 (카카오톡 · 인스타그램 DM · 챗쿠) ─────────────────────────
+def _zip_members(f):
+    """업로드 파일이 zip이면 (이름, 바이트) 목록, 아니면 [(파일명, 바이트)]."""
+    import io
+    import zipfile
+
+    raw = f.getvalue()
+    name = getattr(f, "name", "") or ""
+    if name.lower().endswith(".zip") or raw[:4] == b"PK\x03\x04":
+        try:
+            with zipfile.ZipFile(io.BytesIO(raw)) as z:
+                return [(n, z.read(n)) for n in z.namelist() if not n.endswith("/")]
+        except Exception:
+            return []
+    return [(name, raw)]
+
+
+def _fix_mojibake(t: str) -> str:
+    """인스타 내보내기가 UTF-8을 latin-1로 잘못 해석해 깨진 경우를 복구."""
+    if re.search(r"[À-ÿ]{2,}", t):
+        try:
+            return t.encode("latin-1").decode("utf-8")
+        except Exception:
+            return t
+    return t
+
+
+def _ig_parse_html(s: str):
+    """인스타그램 message_N.html 1개 → (대화 제목, [(보낸 사람, 내용, 시각)]) (최신 → 과거 순)."""
+    title_m = re.search(r"<title>(.*?)</title>", s, re.S)
+    title = html.unescape(title_m.group(1)).strip() if title_m else "대화"
+    msgs = []
+    for chunk in s.split('<div class="pam _3-95 _2ph- _a6-g uiBoxWhite noborder">')[1:]:
+        nm = re.search(r'<h2[^>]*>(.*?)</h2>', chunk, re.S)
+        tm = re.findall(r'<div class="_3-94 _a6-o">(.*?)</div>', chunk, re.S)
+        bm = re.search(r'<div class="_3-95 _a6-p">(.*?)<div class="_3-94 _a6-o">', chunk, re.S)
+        if not nm or not bm:
+            continue
+        body = re.sub(r"<br\s*/?>", " ", bm.group(1))
+        body = re.sub(r"<[^>]+>", " ", body)
+        body = _fix_mojibake(html.unescape(body))
+        body = re.sub(r"\s+", " ", body).strip()
+        if body:
+            msgs.append((_fix_mojibake(html.unescape(re.sub(r"<[^>]+>", "", nm.group(1)))).strip(), body, (tm[-1].strip() if tm else "")))
+    return title, msgs
+
+
+def read_instagram(files) -> dict:
+    """인스타 내보내기(zip 또는 message_N.html) → {대화 제목: [(이름, 내용, 시각)] 과거→최신}."""
+    convs = {}
+    for f in files:
+        for n, raw in _zip_members(f):
+            base = n.replace("\\", "/")
+            if not re.search(r"message_\d+\.html?$", base):
+                continue
+            folder = base.rsplit("/", 1)[0] if "/" in base else base
+            idx = int(re.search(r"message_(\d+)", base).group(1))
+            title, msgs = _ig_parse_html(_decode_bytes(raw))
+            convs.setdefault(folder, {"title": title, "parts": []})["parts"].append((idx, msgs))
+    out = {}
+    for folder, d in convs.items():
+        merged = []
+        for _, msgs in sorted(d["parts"], key=lambda x: x[0]):  # message_1이 가장 최신
+            merged.extend(msgs)
+        merged.reverse()  # 과거 → 최신
+        key = d["title"]
+        while key in out:
+            key += "·"
+        out[key] = merged
+    return out
+
+
+def ig_to_text(msgs) -> str:
+    return "\n".join(f"{n}: {m}" for n, m, _ in msgs)
+
+
+def read_chatku(files):
+    """챗쿠 내보내기 → ({세션 제목: [(User|Assistant, 내용)]}, 메모리 텍스트)."""
+    sessions, memo = {}, []
+    for f in files:
+        for n, raw in _zip_members(f):
+            low = n.lower().replace("\\", "/")
+            if low.endswith(".ndjson"):
+                for ln in _decode_bytes(raw).splitlines():
+                    ln = ln.strip()
+                    if not ln:
+                        continue
+                    try:
+                        o = json.loads(ln)
+                    except Exception:
+                        continue
+                    rows = []
+                    for m in o.get("messages") or []:
+                        who = "User" if m.get("speaker_type") == "user" else "Assistant"
+                        t = re.sub(r"\s+", " ", (m.get("text") or "")).strip()
+                        if t:
+                            rows.append((who, t))
+                    if rows:
+                        key = (o.get("title") or "제목 없음").strip()
+                        while key in sessions:
+                            key += "·"
+                        sessions[key] = rows
+            elif low.endswith((".md", ".txt")) and ("memory" in low or low.endswith(("memory.md", "user.md"))):
+                memo.append(f"[{low.rsplit('/', 1)[-1]}]\n" + _decode_bytes(raw).strip())
+    return sessions, "\n\n".join(memo)
+
+
+def chatku_to_text(sessions: dict, picked, memo: str, with_ai: bool) -> str:
+    parts = []
+    for k in picked:
+        rows = [(w, t) for w, t in sessions[k] if with_ai or w == "User"]
+        parts.append(f"[대화: {k}]\n" + "\n".join(f"{w}: {t}" for w, t in rows))
+    if memo:
+        parts.append("[챗쿠 메모리]\n" + memo[:6000])
+    return "\n\n".join(parts)
+
+
+_GUIDES = {
+    "kakao": {
+        "title": "카카오톡 대화 내보내기",
+        "steps": [
+            "분석하고 싶은 카카오톡 **채팅방**을 열어요.",
+            "오른쪽 위 **메뉴(≡)** → **대화 내보내기**(설정 ⚙) 를 눌러요.",
+            "**텍스트만 보내기**를 선택해요. (사진·동영상은 필요 없어요)",
+            "저장된 **.txt 파일**(또는 .zip)을 아래에 올려 주세요.",
+        ],
+        "note": "단체방이라면 분석할 사람의 이름이 대화에 그대로 보이게 내보내 주세요.",
+    },
+    "instagram": {
+        "title": "인스타그램 DM 내보내기",
+        "steps": [
+            "인스타그램 **설정 → 계정 센터 → 내 정보 및 권한 → 내 정보 다운로드**로 들어가요.",
+            "**정보 맞춤 설정**에서 **메시지**만 선택해요. (다른 항목까지 받으면 파일이 너무 커져요)",
+            "파일 형식은 **HTML**로 받고, 기간은 필요한 만큼 고르세요.",
+            "받은 폴더/압축 파일(`instagram-아이디-날짜-코드`) 안에서 **your_instagram_activity → messages → inbox**를 열면 대화 상대별 폴더가 있어요.",
+            "분석할 상대의 폴더 안 **message_1.html**(또는 전체 .zip)을 아래에 올려 주세요.",
+        ],
+        "note": "개별 대화만 따로 내려받는 기능은 없어요. 원하는 대화의 폴더(message_1.html)만 골라 올려도 돼요. 올린 뒤 분석할 대화를 고를 수 있어요.",
+    },
+    "chatku": {
+        "title": "챗쿠(ChatKHU) 대화 내보내기",
+        "steps": [
+            "챗쿠에서 **내 대화 데이터를 내보내기** 해요.",
+            "받은 `factchat_export_…` 폴더가 생겨요.",
+            "그 안에서 **conversations.ndjson** 파일과 **memory 폴더**만 골라요. (다른 파일은 용량이 커서 올릴 수 없어요)",
+            "두 가지를 아래에 함께 올려 주세요. (memory 폴더는 안의 .md 파일을 올리거나 폴더를 압축해서 올려도 돼요)",
+        ],
+        "note": "올린 뒤 분석할 대화를 고를 수 있어요. AI의 답변은 기본적으로 제외하고 내 말만 분석해요.",
+    },
+}
+
+
+def _guide(key: str):
+    g = _GUIDES[key]
+    with st.expander(f"📘 {g['title']} 가이드", expanded=False):
+        for i, t in enumerate(g["steps"], 1):
+            st.markdown(f"**{i}.** {t}")
+        base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "guides", key)
+        imgs = sorted(
+            os.path.join(base, n) for n in (os.listdir(base) if os.path.isdir(base) else []) if n.lower().endswith((".png", ".jpg", ".jpeg", ".webp"))
+        )
+        if imgs:
+            cols = st.columns(min(len(imgs), 3))
+            for i, pth in enumerate(imgs):
+                cols[i % len(cols)].image(pth, caption=f"STEP {i + 1}", use_container_width=True)
+        st.caption(g["note"])
+
+
 def fit_length(text: str, keep: str) -> str:
     if len(text) <= MAX_CHARS:
         return text
@@ -819,37 +987,78 @@ elif st.session_state.stage == "input":
         st.rerun()
     hero()
     st.markdown('<div class="sec">INPUT</div>', unsafe_allow_html=True)
-    tab1, tab2 = st.tabs(["✍️ 텍스트 붙여넣기", "📄 파일 업로드 (.txt)"])
-    with tab1:
+    mode = st.radio(
+        "입력 방식",
+        ["✍️ 직접 붙여넣기", "💬 카카오톡", "📸 인스타그램 DM", "🤖 챗쿠 대화"],
+        horizontal=True,
+        label_visibility="collapsed",
+    )
+    input_text = ""
+    if mode.startswith("✍️"):
         pasted = st.text_area(
             "대화 내용",
             height=240,
             max_chars=200_000,
-            placeholder="카카오톡 '대화 내보내기' 텍스트, SNS 댓글/DM, ChatGPT 등 챗봇과 나눈 대화를 붙여넣으세요.\n최소 300자, 2,000자 이상이면 더 정확해요.",
+            placeholder="카카오톡 '대화 내보내기' 텍스트나 SNS 댓글/DM을 붙여넣으세요.\n최소 300자, 2,000자 이상이면 더 정확해요.",
             label_visibility="collapsed",
         )
         st.caption(f"{len(pasted):,} / 200,000자 · 최소 {MIN_CHARS}자")
-    with tab2:
+        input_text = pasted
+    elif mode.startswith("💬"):
+        _guide("kakao")
         # 모바일(iOS/Android) 파일 선택창은 확장자 필터(accept)를 엄격히 적용해 .txt가 회색으로 막히는 경우가 있어
         # type 제한을 두지 않고, 확장자는 아래에서 직접 검사한다.
-        up = st.file_uploader("텍스트 파일", label_visibility="collapsed")
-        st.caption("카카오톡 → 채팅방 메뉴 → 대화 내보내기(텍스트)로 받은 .txt 파일(또는 .zip)을 올려 주세요.")
+        up = st.file_uploader("카카오톡 대화 파일", label_visibility="collapsed", key="up_kakao")
+        st.caption("카카오톡에서 내보낸 .txt 파일(또는 .zip)을 올려 주세요.")
         if up is not None:
             _nm = up.name.lower()
             if not _nm.endswith((".txt", ".csv", ".md", ".zip")) and "." in _nm:
                 st.warning("텍스트(.txt) 파일이 아닌 것 같아요. 그래도 읽어 볼게요.")
-            _preview = read_upload(up)
-            if _preview.strip():
-                st.success(f"✅ {up.name} · {len(_preview):,}자를 불러왔어요.")
+            input_text = read_upload(up)
+            if input_text.strip():
+                st.success(f"✅ {up.name} · {len(input_text):,}자를 불러왔어요.")
             else:
-                st.error("파일에서 텍스트를 읽지 못했어요. 카톡 '텍스트로 내보내기' 파일인지 확인하거나, '텍스트 붙여넣기' 탭을 이용해 주세요.")
+                st.error("파일에서 텍스트를 읽지 못했어요. 카톡 '텍스트로 내보내기' 파일인지 확인하거나, '직접 붙여넣기'를 이용해 주세요.")
+    elif mode.startswith("📸"):
+        _guide("instagram")
+        ups = st.file_uploader("인스타그램 DM 파일", accept_multiple_files=True, label_visibility="collapsed", key="up_insta")
+        st.caption("내보낸 .zip 또는 대화 폴더 안의 message_1.html 을 올려 주세요.")
+        if ups:
+            convs = read_instagram(ups)
+            if not convs:
+                st.error("DM 대화를 찾지 못했어요. 'message_1.html'이 들어 있는 파일인지 확인해 주세요. (HTML 형식으로 내보내야 해요)")
+            else:
+                picked = st.multiselect(
+                    "분석할 대화 선택", list(convs), default=list(convs), format_func=lambda k: f"{k} · {len(convs[k]):,}개 메시지"
+                )
+                input_text = "\n\n".join(ig_to_text(convs[k]) for k in picked)
+                if input_text.strip():
+                    st.success(f"✅ {len(picked)}개 대화 · {len(input_text):,}자를 불러왔어요.")
+    else:
+        _guide("chatku")
+        ups = st.file_uploader(
+            "챗쿠 대화 파일", accept_multiple_files=True, label_visibility="collapsed", key="up_chatku"
+        )
+        st.caption("conversations.ndjson 과 memory 폴더(.md 또는 .zip)를 함께 올려 주세요.")
+        if ups:
+            sess, memo = read_chatku(ups)
+            if not sess:
+                st.error("챗쿠 대화를 찾지 못했어요. conversations.ndjson 파일이 포함되어 있는지 확인해 주세요.")
+            else:
+                picked = st.multiselect(
+                    "분석할 대화 선택", list(sess), default=list(sess), format_func=lambda k: f"{k} · {len(sess[k]):,}개 메시지"
+                )
+                with_ai = st.checkbox("AI의 답변도 함께 읽기 (기본: 내 말만 분석)", value=False)
+                input_text = chatku_to_text(sess, picked, memo, with_ai)
+                if input_text.strip():
+                    st.success(f"✅ {len(picked)}개 대화 · {len(input_text):,}자를 불러왔어요." + (" (메모리 포함)" if memo else ""))
 
     terms_box()
     ok1 = st.checkbox("이용 안내를 읽었고, 대화가 챗쿠 프로이트 챗봇 API로 전송되는 데 동의합니다. (필수)")
     ok2 = st.checkbox("본인이 참여한 대화이며, 타인의 정보는 가명 처리했습니다. (필수)")
 
     if st.button("🛋️ 분석 시작하기", type="primary", use_container_width=True):
-        text = read_upload(up) if up is not None else pasted
+        text = input_text
         if len(text.strip()) < MIN_CHARS:
             st.warning(f"대화가 너무 짧아요. 최소 {MIN_CHARS}자 이상 입력해 주세요. (현재 {len(text.strip()):,}자)")
         elif not (ok1 and ok2):
