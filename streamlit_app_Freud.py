@@ -576,7 +576,7 @@ def _icon(name: str) -> str:
 def landing():
     st.markdown(
         """
-<div class="nav"><div class="logo">F R E U D</div><div class="pill">대화 속 무의식 분석 · 베타</div></div>
+<div class="nav"><div class="logo">F R E U D</div></div>
 <div class="lp-hero">
 <div class="couch">{MASCOT}</div>
 <h1>대화 올려 봐요.<br><em>진짜 마음</em>이 뭔지 쿠로이트가 알려줄게요.</h1>
