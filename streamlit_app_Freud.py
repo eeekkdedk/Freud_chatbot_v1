@@ -789,6 +789,7 @@ if st.session_state.stage == "landing":
 
 # ───────────────────────── 1단계: 입력 ─────────────────────────
 elif st.session_state.stage == "input":
+    st.markdown('<div style="height:2.4rem"></div>', unsafe_allow_html=True)  # 상단 기본 바에 버튼이 가리지 않도록 여백
     if st.button("← 처음으로"):
         st.session_state.stage = "landing"
         st.rerun()
