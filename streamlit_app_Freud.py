@@ -208,6 +208,25 @@ def _fold_system(messages: list) -> list:
     return rest
 
 
+_AGENT_NAMES = ("자유전공학부 안내봇", "학사봇")
+
+
+def _agent_hits(obj, skip=False, out=None) -> list:
+    """응답 JSON의 본문(content) 밖 메타데이터에서 연결된 에이전트 이름이 보이면 모은다."""
+    out = [] if out is None else out
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            _agent_hits(v, k in ("content", "text"), out)
+    elif isinstance(obj, list):
+        for v in obj:
+            _agent_hits(v, skip, out)
+    elif isinstance(obj, str) and not skip:
+        for n in _AGENT_NAMES:
+            if n in obj and n not in out:
+                out.append(n)
+    return out
+
+
 def call_llm(messages: list):
     """(응답 텍스트, 호출 출처 라벨) 반환. 챗쿠 챗봇 엔드포인트 → 게이트웨이(모델 직접 호출) 순으로 시도."""
     key = get_key()
@@ -225,6 +244,7 @@ def call_llm(messages: list):
             r = _post_with_retry(url, headers, {"messages": msgs, "stream": False, **extra})
             if r.status_code == 200:
                 text = _extract_text(r.json())
+                st.session_state["_agent_meta"] = _agent_hits(r.json()) if url == CHATBOT_URL else []
                 if text.strip():
                     if errors:  # 앞선 경로가 실패해 대체로 성공한 경우: 실패 사유를 라벨에 남겨 원인 파악
                         label += f" ← 앞 경로 실패: {errors[0][:220]}"
@@ -715,7 +735,8 @@ CAREER_MODE = """[지금은 두 번째 답변이다] 사용자가 추가질문�
   {"key": "학사", "candidates": ["후보 1", "후보 2"], "evidence": ["근거 1(분석 결과·사용자 답변을 짧게 인용)", "근거 2"], "experiment": "검증해 볼 작은 경험 1개"},
   {"key": "직업", ...}, {"key": "삶의 가치관", ...}],
  "unsure": "정보가 부족할 때만, 어떤 정보가 있으면 더 정확해지는지 한 줄 (없으면 빈 문자열)",
- "next_action": "다음 행동 1개"}
+ "next_action": "다음 행동 1개",
+ "agents_used": ["답을 실제로 받아 반영한 에이전트 이름만(자유전공학부 안내봇, 학사봇). 받지 못했으면 빈 배열"]}
 - 학사 영역을 쓰기 전에 연결된 에이전트에게 질문을 넘겨 답을 받아 온다. 전공 탐색·이수 방식 등 자유전공학부 안내(경희대학교 자유전공학부, School of Liberal Studies)는 '자유전공학부 안내봇'에, 학점·졸업·수강 등 제도와 규정(2026년 학사제도와 학사운영규정)은 '학사봇'에 묻는다. 넘길 질문은 사용자의 관심·답변을 반영해 구체적으로 만든다(예: "행사 기획과 정보 구성에 관심이 있는 1학년이 탐색해 볼 수 있는 전공·수업과 이수 규정은?").
 - 학사 영역의 제도·규정·일정·숫자는 에이전트가 돌려준 내용만 쓴다. 에이전트의 답을 받지 못했거나 연결되어 있지 않으면 제도 내용을 추정하지 말고 unsure에 "학사 제도는 자유전공학부 안내봇·학사봇에서 확인이 필요해요"라고 밝힌다. 에이전트의 답에 분석에서 본 관심·강점을 연결해 후보와 작은 경험을 쓴다.
 - areas는 학사 / 직업 / 삶의 가치관 순서의 3개이며, 후보는 영역마다 1~3개, 근거는 1~3개다.
@@ -1236,6 +1257,14 @@ def render_career(d: dict):
         )
 
 
+def _src_line(m: dict) -> str:
+    line = f"호출: {m['src']}"
+    if m.get("data"):  # 진로 결과 카드일 때만 에이전트 참조 여부를 함께 표시
+        ag = m.get("agents") or []
+        line += " · 참고: " + ", ".join(ag) if ag else " · 에이전트 참조 확인 안 됨"
+    return line
+
+
 def render_msg(m: dict):
     with st.chat_message(m["role"]):
         if m.get("qa"):
@@ -1248,7 +1277,7 @@ def render_msg(m: dict):
         else:
             st.write(m["content"])
         if m.get("src"):
-            st.caption(f"호출: {m['src']}")
+            st.caption(_src_line(m))
 
 
 def to_markdown(r: dict, target: str) -> str:
@@ -1568,9 +1597,12 @@ else:
                     st.write(a_)
                 else:
                     render_career(dat)
+                ag = list(st.session_state.pop("_agent_meta", []) or [])
+                if dat:
+                    ag += [n for n in lst(dat.get("agents_used")) if n in _AGENT_NAMES and n not in ag]
                 if csrc:
-                    st.caption(f"호출: {csrc}")
-            chat.append({"role": "assistant", "content": a_, "data": dat, "src": csrc})
+                    st.caption(_src_line({"src": csrc, "data": dat, "agents": ag}))
+            chat.append({"role": "assistant", "content": a_, "data": dat, "agents": ag, "src": csrc})
             st.rerun()
         disclaimer()
         st.stop()
