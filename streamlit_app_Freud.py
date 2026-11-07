@@ -703,10 +703,10 @@ def fmt_est(n_chars: int) -> str:
 def _wait_img(i: int) -> str:
     import base64
 
-    pth = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "loading", f"{i}.jpg")
+    pth = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "loading", f"{i}.svg")
     try:
         with open(pth, "rb") as fh:
-            return "data:image/jpeg;base64," + base64.b64encode(fh.read()).decode()
+            return "data:image/svg+xml;base64," + base64.b64encode(fh.read()).decode()
     except Exception:
         return ""
 
@@ -745,15 +745,16 @@ def run_with_freud_quotes(text: str, target: str, keep: str):
             n = tick // 5
             em, line = WAIT_LINES[order[n % len(order)]]
             scene.markdown(
-                f"<style>.kz{{position:relative;max-width:460px;margin:.4rem auto 0;border:1.5px solid #C0A353;"
-                f"border-radius:20px;overflow:hidden;background:#e9dcc3;box-shadow:0 6px 22px rgba(120,90,40,.18)}}"
-                f".kz img{{display:block;width:100%;animation:kzin 5.2s ease-out both}}"
-                f"@keyframes kzin{{0%{{opacity:0;transform:scale(1)}}12%{{opacity:1}}100%{{opacity:1;transform:scale(1.06)}}}}"
-                f".kz .cap{{position:absolute;left:0;right:0;bottom:0;padding:2.4rem 1rem .85rem;text-align:center;color:#fff;"
-                f"font-weight:700;font-size:.95rem;line-height:1.45;background:linear-gradient(transparent,rgba(35,22,14,.92) 55%);"
-                f"text-shadow:0 1px 3px rgba(0,0,0,.5);word-break:keep-all}}"
-                f".kzt{{text-align:center;color:#7a7a80;font-size:.82rem;margin-top:.6rem}}</style>"
-                f'<div class="kz"><img alt="" src="{_wait_img(n % 4 + 1)}"><div class="cap">{em} {e(line)}</div></div>',
+                "<style>.kz{max-width:680px;margin:.6rem auto 0;border:1.5px solid #C0A353;border-radius:22px;overflow:hidden;"
+                "background:#fff;box-shadow:0 8px 26px rgba(120,90,40,.2)}"
+                ".kz img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;object-position:50% 22%;"
+                "animation:kzin 5.2s ease-out both}"
+                "@keyframes kzin{0%{opacity:.25;transform:scale(1)}8%{opacity:1}100%{opacity:1;transform:scale(1.05)}}"
+                ".kz .cap{background:#fff;color:#1f1f24;text-align:center;font-weight:700;font-size:1.3rem;line-height:1.55;"
+                "padding:1.1rem 1.3rem 1.25rem;border-top:1.5px solid #E7DCC0;word-break:keep-all}"
+                ".kz .cap .em{display:block;font-size:2rem;line-height:1.2;margin-bottom:.25rem}"
+                ".kzt{text-align:center;color:#555;font-size:1rem;font-weight:600;margin-top:.7rem}</style>"
+                f'<div class="kz"><img alt="" src="{_wait_img(n % 4 + 1)}"><div class="cap"><span class="em">{em}</span>{e(line)}</div></div>',
                 unsafe_allow_html=True,
             )
         sec = int(time.time() - t0)
