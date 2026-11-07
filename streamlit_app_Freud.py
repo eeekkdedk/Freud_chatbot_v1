@@ -67,6 +67,7 @@ html, body, [class*="css"], .stApp { font-family: 'Pretendard', -apple-system, s
 .fnd h4 { font-size:1.02rem; color:#A40F16; margin:.1rem 0 .5rem; }
 .nav { display:flex; align-items:center; justify-content:space-between; padding:.2rem 0 .6rem; }
 .nav .logo { font-weight:800; letter-spacing:.3em; color:#A40F16; font-size:1.05rem; }
+.ver { text-align:right; color:#c4c4c9; font-size:.62rem; letter-spacing:.02em; margin:-.2rem 0 .2rem; }
 .nav .pill { font-size:.72rem; color:#717171; border:1px solid #e3e3e6; border-radius:999px; padding:.2rem .7rem; }
 .lp-hero { text-align:center; padding:1.6rem 0 .6rem; }
 .lp-hero .couch { font-size:3.6rem; line-height:0; }
@@ -573,16 +574,35 @@ def _icon(name: str) -> str:
     return _ICONS[name]
 
 
+@st.cache_data
+def _version_label() -> str:
+    """배포된 커밋 기준 버전 표기: 'update 2026-11-08 05:11 KST · 3ffe96e'. git을 못 읽으면 파일 수정 시각으로 대체."""
+    import subprocess
+    from datetime import datetime, timedelta, timezone
+
+    kst = timezone(timedelta(hours=9))
+    here = os.path.dirname(os.path.abspath(__file__))
+    try:
+        out = subprocess.run(
+            ["git", "log", "-1", "--format=%ct %h"], cwd=here, capture_output=True, text=True, timeout=5, check=True
+        ).stdout.split()
+        when, short = datetime.fromtimestamp(int(out[0]), kst), out[1]
+    except Exception:
+        when, short = datetime.fromtimestamp(os.path.getmtime(os.path.abspath(__file__)), kst), ""
+    return f"update {when:%Y-%m-%d %H:%M} KST" + (f" · {short}" if short else "")
+
+
 def landing():
     st.markdown(
         """
-<div class="nav"><div class="logo">F R E U D</div></div>
+<div class="nav"><div class="logo">F R E U D</div><div class="pill">대화 속 무의식 분석 · 베타</div></div>
+<div class="ver">{VERSION}</div>
 <div class="lp-hero">
 <div class="couch">{MASCOT}</div>
 <h1>대화 올려 봐요.<br><em>진짜 마음</em>이 뭔지 쿠로이트가 알려줄게요.</h1>
 <div class="sub">카톡·SNS·챗봇 대화를 읽고<br>말버릇과 방어기제, 반복되는 패턴을 찾아<br>나에게 맞는 진로의 실마리까지 제안해요.</div>
 </div>
-""".replace("{MASCOT}", _mascot_html()),
+""".replace("{MASCOT}", _mascot_html()).replace("{VERSION}", _version_label()),
         unsafe_allow_html=True,
     )
     if st.button("🛋️ 지금 해 보기", type="primary", use_container_width=True, key="cta_top"):
