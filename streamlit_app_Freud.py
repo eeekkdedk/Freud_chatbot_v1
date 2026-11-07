@@ -787,19 +787,40 @@ def _icon_uri(name: str) -> str:
     return "data:image/svg+xml;base64," + base64.b64encode(svg.encode()).decode()
 
 
-def _tab_icon_css(names):
-    rules = ""
-    for i, n in enumerate(names, 1):
-        sel = f'button[role="tab"]:nth-child({i})::before, button[data-baseweb="tab"]:nth-child({i})::before'
-        rules += (
-            f'{sel}{{content:"";display:inline-block;flex:none;width:1.2em;height:1.2em;margin-right:.5em;'
-            f'vertical-align:middle;background:url("{_icon_uri(n)}") center/contain no-repeat;}}'
-        )
-    css = f"<style>{rules}</style>"
-    if hasattr(st, "html"):
-        st.html(css)
-    else:
-        st.markdown(css, unsafe_allow_html=True)
+def _tab_icon_css(pairs):
+    """탭 라벨 앞에 <img> 아이콘을 실제 이미지로 삽입한다. pairs: [(탭 글자, 아이콘 이름), ...]"""
+    import json
+
+    import streamlit.components.v1 as components
+
+    data = json.dumps({lbl: _icon_uri(n) for lbl, n in pairs})
+    components.html(
+        """<script>
+(function () {
+  var MAP = %s;
+  var doc = window.parent.document;
+  function apply() {
+    doc.querySelectorAll('button[role="tab"]').forEach(function (b) {
+      var t = (b.textContent || '').trim();
+      var src = MAP[t];
+      if (!src || b.querySelector('img.tabic')) return;
+      var im = doc.createElement('img');
+      im.className = 'tabic'; im.src = src; im.alt = '';
+      im.style.cssText = 'width:1.25em;height:1.25em;margin-right:.45em;vertical-align:middle;flex:none;object-fit:contain;';
+      b.insertBefore(im, b.firstChild);
+    });
+  }
+  apply();
+  try {
+    if (window.parent.__tabIconObs) window.parent.__tabIconObs.disconnect();
+    var obs = new MutationObserver(function () { apply(); });
+    obs.observe(doc.body, { childList: true, subtree: true });
+    window.parent.__tabIconObs = obs;
+  } catch (e) {}
+})();
+</script>""" % data,
+        height=0,
+    )
 
 
 @st.cache_data
@@ -1046,7 +1067,7 @@ elif st.session_state.stage == "input":
         st.rerun()
     hero()
     st.markdown('<div class="sec">INPUT</div>', unsafe_allow_html=True)
-    _tab_icon_css(["txt", "kakao", "sns", "chatkhu"])
+    _tab_icon_css([("직접 붙여넣기", "txt"), ("카카오톡", "kakao"), ("인스타그램 DM", "sns"), ("챗쿠 대화", "chatkhu")])
     tab1, tab2, tab3, tab4 = st.tabs(["직접 붙여넣기", "카카오톡", "인스타그램 DM", "챗쿠 대화"])
     texts = {"paste": "", "kakao": "", "insta": "", "chatku": ""}
     with tab1:
