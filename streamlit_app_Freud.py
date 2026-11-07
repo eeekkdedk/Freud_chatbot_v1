@@ -24,6 +24,7 @@ GATEWAY_MAX_TOKENS = 16000  # 추론 모델은 이보다 낮으면 빈 응답(20
 RETRY_STATUS = {429, 500, 502, 503, 504}
 
 MIN_CHARS = 300
+DEMO_REPO_URL = "https://github.com/eeekkdedk/Freud_chatbot_v1/blob/main/assets/demo"
 MAX_CHARS = 60_000
 
 st.set_page_config(page_title="FREUD · 대화 속 무의식 분석", page_icon="🛋️", layout="centered")
@@ -1152,6 +1153,8 @@ elif st.session_state.stage == "input":
             _pv_txt = load_demo(kind, True) if kind == "챗쿠 대화" else texts["demo"]
             with st.expander("미리보기" + (" (챗쿠 답변 포함 · 분석에는 내 말만 사용)" if kind == "챗쿠 대화" else "")):
                 st.text(_pv_txt[:1500] + ("…" if len(_pv_txt) > 1500 else ""))
+                _gh = {"카카오톡 대화": "kakao.csv", "인스타그램 DM": "instagram.zip", "챗쿠 대화": "chatku.zip"}[kind]
+                st.markdown(f"📂 원본 파일 보기: [GitHub · assets/demo/{_gh}]({DEMO_REPO_URL}/{_gh})")
         else:
             st.error("예시 데이터를 불러오지 못했어요.")
     input_text = next((texts[k] for k in ("demo", "kakao", "insta", "chatku", "paste") if texts[k].strip()), "")
