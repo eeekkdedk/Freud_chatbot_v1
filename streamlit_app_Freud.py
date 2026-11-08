@@ -1340,7 +1340,7 @@ def career_markdown(chat: list) -> str:
 
 
 def go_home():
-    for k in ("stage", "raw", "result", "target", "chat", "src", "busy", "msgs", "stats", "slide", "view", "career_ans", "_pending"):
+    for k in ("stage", "raw", "result", "target", "chat", "src", "busy", "msgs", "msg_kind", "stats", "slide", "view", "career_ans", "_pending"):
         st.session_state.pop(k, None)
     st.session_state.stage = "landing"
 
@@ -1360,7 +1360,7 @@ for k, v in (("stage", "landing"),("raw", ""), ("result", None), ("target", ""),
 
 
 def reset():
-    for k in ("stage", "raw", "result", "target", "chat", "src", "busy", "msgs", "stats", "slide", "view", "career_ans", "_pending"):
+    for k in ("stage", "raw", "result", "target", "chat", "src", "busy", "msgs", "msg_kind", "stats", "slide", "view", "career_ans", "_pending"):
         st.session_state.pop(k, None)
     st.session_state.stage = "input"  # 다시 분석 시 랜딩 대신 바로 입력 화면으로
 
@@ -1448,6 +1448,7 @@ elif st.session_state.stage == "input":
     if _sel == "demo":
         st.info("💡 가상의 인물·대화로 만든 **예시 데이터**예요. 내 대화가 없어도 서비스를 체험해 볼 수 있어요.")
         kind = st.radio("체험할 예시", ["카카오톡 대화", "인스타그램 DM", "챗쿠 대화"], horizontal=True, label_visibility="collapsed")
+        st.session_state["demo_kind"] = kind
         texts["demo"] = load_demo(kind)
         mm["demo"] = load_demo_msgs(kind)
         if texts["demo"].strip():
@@ -1462,6 +1463,8 @@ elif st.session_state.stage == "input":
     _src = next((k for k in ("demo", "kakao", "insta", "chatku", "paste") if texts[k].strip()), "")
     input_text = texts[_src] if _src else ""
     input_msgs = mm[_src] if _src else []
+    _chatku_demo = _src == "demo" and st.session_state.get("demo_kind") == "챗쿠 대화"
+    input_kind = "chatku" if (_src == "chatku" or _chatku_demo) else ""
 
     terms_box()
     ok1 = st.checkbox("이용 안내를 읽었고, 대화가 챗쿠 프로이트 챗봇 API로 전송되는 데 동의합니다. (필수)")
@@ -1478,6 +1481,7 @@ elif st.session_state.stage == "input":
         else:
             st.session_state.raw = text
             st.session_state.msgs = input_msgs
+            st.session_state.msg_kind = input_kind
             st.session_state.stage = "pick"
             st.rerun()
 
@@ -1534,7 +1538,7 @@ elif st.session_state.stage == "pick":
         st.session_state.chat = []
         st.session_state.raw = ""  # 원문은 분석 직후 메모리에서 제거
         try:  # 통계 카드는 여기서 한 번 계산하고, 원문 메시지는 바로 폐기
-            st.session_state.stats = kstats.compute(st.session_state.get("msgs") or [], mask_pii)
+            st.session_state.stats = kstats.compute(st.session_state.get("msgs") or [], mask_pii, st.session_state.get("target", ""), st.session_state.get("msg_kind", ""))
         except Exception:
             st.session_state.stats = {"people": [], "slides": []}
         st.session_state.pop("msgs", None)

@@ -135,7 +135,7 @@ _PARTICLE = re.compile(r"(으로|에서|에게|이랑|까지|부터|한테|이�
 _STOP = {
     "그리고", "그런데", "그래서", "근데", "그냥", "진짜", "이거", "저거", "그거", "우리", "나는", "내가", "너무", "오늘", "지금",
     "이제", "일단", "아니", "그럼", "정말", "하는", "있는", "없는", "같은", "하고", "해서", "하면", "하지", "있어", "없어", "해요",
-    "있다", "없다", "한다", "합니다", "입니다", "있습니다", "the", "and", "that", "for", "you", "this", "with",
+    "있다", "없다", "뭐야", "설명해", "설명", "쉽게", "알려줘", "해줘", "무슨", "어떻게", "어떤", "이건", "그건", "근데", "아직", "계속", "한번", "다시", "한다", "합니다", "입니다", "있습니다", "the", "and", "that", "for", "you", "this", "with",
 }
 
 
@@ -167,221 +167,7 @@ def _kdate(d) -> str:
 
 
 
-# ───────────────────────── 프로젝트 맞춤 지표 (사전 기반 · 참고용) ─────────────────────────
-_POS = ("좋", "행복", "기쁘", "기뻐", "감사", "고마", "재밌", "재미있", "설레", "신나", "편하", "뿌듯", "다행", "최고", "사랑", "대박", "축하", "웃겨", "괜찮")
-_NEG = ("힘들", "싫", "짜증", "우울", "슬프", "화나", "화가", "지치", "지쳐", "귀찮", "별로", "최악", "망했", "속상", "외롭", "답답", "서운", "허무", "자책")
-_ANX = ("불안", "걱정", "두렵", "무섭", "초조", "긴장", "떨려", "막막", "부담", "조급", "눈치", "어떡", "망설")
-_SIGNALS = [
-    ("질문을 던짐", lambda t: "?" in t or re.search(r"(까요|나요|ㄹ까|을까|어때)\s*$", t)),
-    ("사과·미안함", lambda t: re.search(r"미안|죄송|ㅈㅅ", t)),
-    ("고마움 표현", lambda t: re.search(r"고마|감사|땡큐|ㄱㅅ", t)),
-    ("완곡·망설임", lambda t: re.search(r"아마|그냥|좀|인 듯|같은데|것 같|모르겠|글쎄", t)),
-    ("단호한 표현", lambda t: re.search(r"무조건|절대|반드시|확실|당연|꼭 ", t)),
-]
-_TOPICS = [
-    ("진로·미래", ("진로", "전공", "취업", "직업", "커리어", "인턴", "대학원", "자격증", "목표", "꿈", "미래")),
-    ("학업·과제", ("수업", "과제", "시험", "학점", "공부", "발표", "팀플", "강의", "제출", "리포트")),
-    ("사람·관계", ("친구", "가족", "부모", "연애", "선배", "동기", "후배", "교수", "사람")),
-    ("현실·돈", ("돈", "알바", "월급", "등록금", "비용", "생활비")),
-    ("고민·망설임", ("고민", "모르겠", "어떡", "어떻게", "고르", "선택", "결정")),
-]
-_I = {"나", "난", "내가", "나는", "나도", "나를", "내", "나한테", "저", "저는", "제가", "전", "저도", "저를", "내가"}
-_YOU = {"너", "넌", "네가", "니가", "너는", "너도", "너를", "너한테", "당신", "당신은"}
-
-
-def _hits(t: str, words) -> int:
-    return sum(t.count(w) for w in words)
-
-
-def _mind_card(title, hint, inner, cls="lav"):
-    return f'<div class="ks-card c-{cls}"><div class="ks-h">{_e(title)}</div>{inner}<div class="ks-sub">{_e(hint)}</div></div>'
-
-
-def _stack(name, parts) -> str:
-    tot = sum(v for _, v, _ in parts) or 1
-    segs = "".join(
-        f'<span style="width:{v / tot * 100:.1f}%;background:{c}" title="{_e(l)} {v}"></span>' for l, v, c in parts if v
-    )
-    return f'<div class="ks-row"><span class="ks-rn">{_e(name)}</span><span class="ks-track ks-stack">{segs}</span></div>'
-
-
-def _legend(items) -> str:
-    return '<div class="ks-key">' + "".join(f'<span><i style="background:{c}"></i>{_e(l)}</span>' for l, c in items) + "</div>"
-
-
-def _mind_slides(msgs, people) -> list:
-    out = []
-    P3 = people[:3]
-    by = {n: [m["text"] for m in msgs if m["name"] == n and m["text"] not in _SKIP_TEXT] for n in P3}
-    by = {n: v for n, v in by.items() if len(v) >= 5}
-    if not by:
-        return out
-    # 감정 온도
-    rows, tot = "", 0
-    laugh = ""
-    for n, v in by.items():
-        pos = sum(_hits(t, _POS) for t in v)
-        neg = sum(_hits(t, _NEG) for t in v)
-        anx = sum(_hits(t, _ANX) for t in v)
-        tot += pos + neg + anx
-        rows += _stack(n, [("긍정", pos, "#4FB286"), ("부정", neg, "#E0627A"), ("불안", anx, "#E9A23B")])
-        happy = sum(len(re.findall(r"[ㅋㅎ]{2,}", t)) for t in v)
-        sad = sum(len(re.findall(r"[ㅠㅜ]{2,}", t)) for t in v)
-        laugh += f'<div class="ks-w">{_e(n)} <small>웃음 ㅋㅋ·ㅎㅎ {happy}회 · 울음 ㅠㅠ·ㅜㅜ {sad}회</small></div>'
-    if tot >= 5:
-        out.append((
-            "감정 온도",
-            _mind_card("감정 단어의 구성", "감정 단어를 사전으로 센 비율이에요. 얼마나 말하느냐보다 어떤 감정을 자주 꺼내는지가 단서가 돼요.", rows + _legend([("긍정", "#4FB286"), ("부정", "#E0627A"), ("불안", "#E9A23B")]), "mint")
-            + _mind_card("웃음·울음 표현", "ㅋㅋ·ㅠㅠ 같은 표현으로 드러나는 분위기예요.", laugh, "yellow"),
-        ))
-    # 말투 신호
-    head = "".join(f"<span>{_e(n)}</span>" for n in by)
-    grid = ""
-    for label, fn in _SIGNALS:
-        cells = "".join(f"<span>{int(round(sum(1 for t in v if fn(t)) / len(v) * 100))}%</span>" for v in by.values())
-        grid += f'<div class="ks-gr"><b>{_e(label)}</b>{cells}</div>'
-    out.append((
-        "말투에 담긴 신호",
-        _mind_card("메시지 중 이런 말투가 든 비율", "관계에서 조심하는지, 확신하는지, 먼저 묻는지를 보여주는 습관이에요.", f'<div class="ks-gr ks-gh"><b></b>{head}</div>{grid}', "pink"),
-    ))
-    # 관심사
-    allt = [t for v in by.values() for t in v]
-    tp = [(lab, sum(1 for t in allt if any(w in t for w in ws))) for lab, ws in _TOPICS]
-    tp = [(l, c) for l, c in tp if c]
-    if tp:
-        mxc = max(c for _, c in tp)
-        bars = "".join(
-            f'<div class="ks-row"><span class="ks-rn" style="width:5.6rem">{_e(l)}</span><span class="ks-track"><span class="ks-fill" style="width:{int(c / mxc * 100)}%;background:#E48B5B"></span></span><span class="ks-pc">{c}회</span></div>'
-            for l, c in sorted(tp, key=lambda x: -x[1])
-        )
-        wc = Counter(w for t in allt for w in _tokens(t))
-        tw = [w for w, c in wc.most_common(5) if c >= 2]
-        words = "".join(f'<span class="ks-chip">{_e(w)}</span>' for w in tw)
-        out.append((
-            "머릿속 관심사",
-            _mind_card("자주 꺼낸 주제 (해당 말이 들어간 메시지 수)", "진로 고민이 어느 주제와 맞닿아 있는지 보는 단서예요.", bars, "peach")
-            + (_mind_card("가장 많이 쓴 단어", "", f'<div class="ks-chips">{words}</div>', "lav") if tw else ""),
-        ))
-    # 나·너·우리
-    rows = ""
-    ok = False
-    for n, v in by.items():
-        i = u = w = 0
-        for t in v:
-            for tok in re.split(r"[\s,.!?~]+", t):
-                if tok in _I:
-                    i += 1
-                elif tok in _YOU:
-                    u += 1
-                elif tok.startswith("우리"):
-                    w += 1
-        if i + u + w >= 5:
-            ok = True
-        rows += _stack(n, [("나", i, "#7C6AE6"), ("너", u, "#F09AE0"), ("우리", w, "#F7CB45")])
-    if ok:
-        out.append((
-            "나 · 너 · 우리",
-            _mind_card("누구를 향해 말하는가", "‘나’가 많으면 자기 이야기를, ‘너’가 많으면 상대에게 초점을, ‘우리’가 많으면 함께하는 관점을 자주 쓴다는 뜻이에요.", rows + _legend([("나", "#7C6AE6"), ("너", "#F09AE0"), ("우리", "#F7CB45")]), "lav"),
-        ))
-    return out
-
-
-def compute(msgs: list, mask=lambda s: s) -> dict:
-    """통계를 계산해 {'people': [...], 'slides': [(제목, html), ...]} 로 돌려준다."""
-    msgs = [m for m in msgs if m.get("text")]
-    if len(msgs) < 5:
-        return {"people": [], "slides": []}
-    n_dt = sum(1 for m in msgs if m["dt"])
-    has_dt = n_dt >= max(5, 0.7 * len(msgs))
-    if has_dt:
-        msgs = sorted([m for m in msgs if m["dt"]], key=lambda m: m["dt"])
-
-    cnt = Counter(m["name"] for m in msgs)
-    people = [n for n, _ in cnt.most_common(4)]
-    pcol = {n: PALETTE[i] for i, n in enumerate(people)}
-    ncol = {n: NAME_COLORS[i] for i, n in enumerate(people)}
-    total = sum(cnt.values())
-    slides = []
-
-    # 1) 달력
-    if has_dt:
-        s = _cal_slide(msgs)
-        if s:
-            slides.append(("하루하루 쌓인 대화", s))
-
-    # 2) 관계 방식: 지분 · 먼저 말 건 사람 · 칼답률
-    if len(cnt) >= 2:
-        body = _card("lav", "대화 지분", _donut(people, cnt, total, pcol, len(cnt)))
-        if has_dt:
-            starts = Counter()
-            last = None
-            for m in msgs:
-                if last is None or (m["dt"] - last) >= timedelta(hours=6):
-                    starts[m["name"]] += 1
-                last = m["dt"]
-            ts = sum(starts.values())
-            if ts >= 3:
-                bars = "".join(_bar(n, starts[n] / ts, pcol[n]) for n in people)
-                body += _card("pink", "먼저 말 건 사람", bars)
-            q = _quick_card(msgs, people, pcol)
-            body += q
-        slides.append(("대화 속 관계 방식", body))
-
-    # 3) 마음 신호 (감정 · 말투 · 관심사 · 나너우리)
-    slides += _mind_slides(msgs, people)
-
-    # 3-1) 대화 시간대
-    if has_dt:
-        s = _hours_slide(msgs)
-        if s:
-            slides.append(("대화하는 시간", s))
-
-    # 4) 가장 긴 메시지
-    longest = []
-    for n in people[:3]:
-        mm = max((m for m in msgs if m["name"] == n and m["text"] not in _SKIP_TEXT), key=lambda m: len(m["text"]), default=None)
-        if mm and len(mm["text"]) >= 30:
-            longest.append((n, mm))
-    if longest:
-        body = ""
-        for n, mm in longest:
-            full = mask(mm["text"])
-            head, rest = (full[:70].rstrip() + "…", full) if len(full) > 90 else (full, "")
-            dt = f'<div class="ks-sub">{_e(_kdate(mm["dt"]))}</div>' if mm["dt"] else ""
-            bub = (
-                f'<div class="ks-b"><div class="ks-n" style="color:{ncol[n]}">{_e(n)}</div>'
-                f'<span class="ks-t">{_e(head)}</span>'
-                + (f'<details><summary>전체 보기</summary><span class="ks-t">{_e(rest)}</span></details>' if rest else "")
-                + "</div>"
-            )
-            body += f'<div class="ks-card c-beige"><div class="ks-h">{_e(n)}</div><div class="ks-num">{len(mm["text"])}<small>자</small></div>{dt}{bub}</div>'
-        slides.append(("가장 길게 털어놓은 말", body))
-
-    # 5) 처음 / 지금
-    def day_card(title, rows, d):
-        h = f'<div class="ks-date">{_e(_kdate(d))}</div>' if d else ""
-        return f'<div class="ks-card c-beige">{h}{bubbles([(m["name"], mask(m["text"][:140])) for m in rows], ncol)}</div>'
-
-    first_rows, last_rows, d0, d1 = _edge_days(msgs, has_dt)
-    if first_rows:
-        slides.append(("모든 건 여기서 시작", day_card("", first_rows, d0)))
-    if last_rows and last_rows != first_rows:
-        slides.append(("그리고 지금, 여기까지", day_card("", last_rows, d1)))
-
-    # 6) 자주 쓰는 말
-    s = _words_slide(msgs, people, cnt, pcol)
-    if s:
-        slides.append(("자주 쓰는 말", s))
-    return {"people": people, "slides": slides}
-
-
-def _edge_days(msgs, has_dt):
-    if not has_dt:
-        return msgs[:6], msgs[-5:], None, None
-    d0, d1 = msgs[0]["dt"].date(), msgs[-1]["dt"].date()
-    first = [m for m in msgs if m["dt"].date() == d0][:6]
-    last = [m for m in msgs if m["dt"].date() == d1][-5:]
-    return first, last, d0, d1
+_I = {"나", "난", "내가", "나는", "나도", "나를", "내", "나한테", "저", "저는", "제가", "전", "저도", "저를"}
 
 
 def _card(cls: str, title: str, inner: str) -> str:
@@ -397,32 +183,10 @@ def _bar(name, frac, color) -> str:
     )
 
 
-def _donut(people, cnt, total, pcol, n_all) -> str:
-    segs, off = "", 0.0
-    shown = sum(cnt[n] for n in people)
-    parts = [(n, cnt[n]) for n in people]
-    if total - shown > 0:
-        parts.append(("기타", total - shown))
-    leg = ""
-    for i, (n, c) in enumerate(parts):
-        frac = c / total * 100
-        col = pcol.get(n, PALETTE[4])
-        segs += (
-            f'<circle r="15.9155" cx="21" cy="21" fill="none" stroke="{col}" stroke-width="7" '
-            f'stroke-dasharray="{frac:.2f} {100 - frac:.2f}" stroke-dashoffset="{25 - off:.2f}"/>'
-        )
-        off += frac
-        leg += (
-            f'<div class="ks-lg"><i style="background:{col}"></i><b>#{i + 1}</b><span>{_e(n)}</span>'
-            f'<em>{int(round(frac))}%</em></div>'
-        )
-    return f'<div class="ks-dn"><svg viewBox="0 0 42 42" width="130" height="130">{segs}</svg><div class="ks-legend">{leg}</div></div>'
-
-
 def _cal_slide(msgs) -> str:
     per = Counter(m["dt"].date() for m in msgs)
     d0, d1 = min(per), max(per)
-    start = date(d0.year, 1, 1)
+    start = date(d0.year, 1, 1) if (d1.year - d0.year) * 12 + d1.month - d0.month >= 3 else date(d0.year, d0.month, 1)
     if (d1.year - d0.year) * 12 + d1.month - d0.month > 11 or d0.year != d1.year and False:
         k = d1.year * 12 + d1.month - 1 - 11
         start = date(k // 12, k % 12 + 1, 1)
@@ -455,82 +219,269 @@ def _cal_slide(msgs) -> str:
     )
 
 
-def _quick_card(msgs, people, pcol) -> str:
-    quick, repl = Counter(), Counter()
-    for a, b in zip(msgs, msgs[1:]):
-        if a["name"] != b["name"]:
-            repl[b["name"]] += 1
-            if (b["dt"] - a["dt"]).total_seconds() <= 60:
-                quick[b["name"]] += 1
-    rates = sorted(((n, quick[n] / repl[n]) for n in people if repl[n] >= 3), key=lambda x: -x[1])[:3]
-    if len(rates) < 2:
-        return ""
-    order = [1, 0, 2] if len(rates) == 3 else [1, 0]
-    medals = ["🥇", "🥈", "🥉"]
-    boxes = ""
-    for i in order:
-        n, r = rates[i]
-        pad = {0: 2.2, 1: 1.4, 2: 0.8}[i]
-        boxes += (
-            f'<div class="ks-pod" style="padding-top:{pad}rem;background:{pcol[n]}55"><div>{medals[i]}</div>'
-            f'<div class="ks-pn">{_e(n)}</div><div class="ks-pv">{int(round(r * 100))}%</div></div>'
+
+
+# ───────────────────────── 연결고리별 통계 (사전 기반 · 참고용) ─────────────────────────
+# 프로이트 챗봇 논리구조의 1→2단계 연결고리 5개를 숫자로 보여준다. 해석은 리포트(A~E)가 맡는다.
+_POS = ("좋", "행복", "기쁘", "기뻐", "감사", "고마", "재밌", "재미있", "설레", "신나", "편하", "뿌듯", "다행", "최고", "사랑", "대박", "축하", "웃겨", "괜찮")
+_NEG = ("힘들", "싫", "짜증", "우울", "슬프", "화나", "화가", "지치", "지쳐", "귀찮", "별로", "최악", "망했", "속상", "외롭", "답답", "서운", "허무", "자책")
+_ANX = ("불안", "걱정", "두렵", "무섭", "초조", "긴장", "떨려", "막막", "부담", "조급", "눈치", "어떡", "망설")
+
+_REL = [  # ① 관계적 자아 7요인
+    ("관계 회피", ("나중에", "바빠", "피곤", "됐어", "귀찮", "다음에", "그냥 괜찮", "혼자 있")),
+    ("타인 의식", ("눈치", "남들", "다들", "사람들이", "어떻게 볼", "이상하게", "시선", "비현실적")),
+    ("주도성", ("하자", "가자", "내가 할게", "정하자", "해보자", "같이 하", "내가 정리", "내가 알아")),
+    ("도구적 관계", ("부탁", "빌려", "알려줘", "도와줘", "필요하면", "대신", "해줄 수")),
+    ("공감·배려", ("고마", "감사", "괜찮아?", "걱정", "수고", "미안", "고생", "잘했", "이해해")),
+    ("지지받기", ("힘들어", "위로", "어떡해", "응원", "괜찮을까", "들어줘", "도와")),
+    ("관계 의존", ("보고싶", "보고 싶", "연락", "어디야", "뭐해", "같이 있", "외로", "기다")),
+]
+_WANT_DIRECT = re.compile(r"싶[어다은]|싶은|원해|바라|했으면|되고 싶|갖고 싶")
+_WANT_EMO = ("부럽", "서운", "뿌듯", "속상", "설레", "질투", "아쉽", "억울", "섭섭", "짜증")
+_WANT_VALUE = re.compile(r"보다|가장 중요|제일|중요한 건|중요하|우선|포기")
+_MASLOW = [
+    ("자아실현", ("성장", "의미", "도전", "꿈", "해보고 싶", "배우", "목표", "하고 싶")),
+    ("존중", ("인정", "칭찬", "존중", "자신감", "무시", "자랑", "잘하")),
+    ("애정·소속", ("친구", "같이", "외롭", "사랑", "함께", "동아리", "가족", "소속")),
+    ("안전", ("취업", "안정", "돈", "걱정", "불안", "장학금", "현실", "생활비")),
+    ("생리", ("잠", "피곤", "배고", "밥", "아파", "졸려")),
+]
+_CAUSAL = ("왜냐하면", "그래서", "때문", "그러니까", "결국", "생각해보니", "돌아보면", "내가 왜", "라서", "니까")
+_UNSURE = ("아마", "것 같", "인 듯", "모르겠", "글쎄", "어쩌면", "할까")
+_SURE = ("확실", "무조건", "당연", "절대", "반드시")
+_CONFUSED = re.compile(r"이해가 안|이해 안|다시 설명|예시|모르겠|헷갈|무슨 말|어렵|잘 모르")
+_RESOLVED = re.compile(r"아 그렇구나|아 알겠|알겠어|이해했|이해됐|아하|오 그렇|그렇구나|그건 알겠")
+_AI_NAME = re.compile(r"chat\s*gpt|gpt|assistant|claude|gemini|copilot|챗쿠|챗봇|^ai$|bot$|어시스턴트", re.I)
+_POLITE = re.compile(r"(요|니다|니까|세요|습니다)[.!?~ ]*$")
+
+
+def is_ai(name: str) -> bool:
+    return bool(_AI_NAME.search(name or ""))
+
+
+def _hits(t: str, words) -> int:
+    return sum(t.count(w) for w in words)
+
+
+def _tag(code: str, report: str, hint: str = "") -> str:
+    return (
+        f'<div class="ks-tag"><b>{_e(code)}</b> 리포트 {_e(report)} 섹션과 이어져요'
+        + (f"<span>{_e(hint)}</span>" if hint else "")
+        + "</div>"
+    )
+
+
+_NOTE = "단어를 사전으로 센 단서예요. 진단이 아니라 리포트에서 해석할 재료예요."
+
+
+def _pct(n: int, d: int) -> int:
+    return int(round(n / d * 100)) if d else 0
+
+
+def _hbars(rows, color="#7C6AE6", unit="%") -> str:
+    mx = max((v for _, v in rows), default=0) or 1
+    return "".join(
+        f'<div class="ks-row"><span class="ks-rn" style="width:6rem">{_e(l)}</span>'
+        f'<span class="ks-track"><span class="ks-fill" style="width:{int(v / mx * 100)}%;background:{color}"></span></span>'
+        f'<span class="ks-pc">{v}{unit}</span></div>'
+        for l, v in rows
+    )
+
+
+def _tiles(items) -> str:
+    return '<div class="ks-two3">' + "".join(
+        f'<div class="ks-tile"><div class="ks-tn">{_e(v)}</div><div class="ks-tl">{_e(l)}</div></div>' for l, v in items
+    ) + "</div>"
+
+
+def _feat(texts: list) -> dict:
+    n = len(texts) or 1
+    return {
+        "n": len(texts),
+        "len": round(sum(len(t) for t in texts) / n, 1),
+        "polite": _pct(sum(1 for t in texts if _POLITE.search(t.strip())), n),
+        "emo": _pct(sum(1 for t in texts if _hits(t, _POS + _NEG + _ANX)), n),
+        "ask": _pct(sum(1 for t in texts if "?" in t or re.search(r"(까요|나요|ㄹ까|을까|어때)\s*$", t)), n),
+        "laugh": _pct(sum(1 for t in texts if re.search(r"[ㅋㅎㅠㅜ]{2,}", t)), n),
+    }
+
+
+def compute(msgs: list, mask=lambda s: s, target: str = "", kind: str = "") -> dict:
+    """연결고리별 통계 카드를 만들어 {'people': [...], 'slides': [(제목, html), ...]} 로 돌려준다.
+    target: 분석 대상자 이름, kind: 'chatku'면 모든 발화를 AI 대화로 본다."""
+    msgs = [m for m in msgs if m.get("text")]
+    if len(msgs) < 5:
+        return {"people": [], "slides": []}
+    has_dt = sum(1 for m in msgs if m["dt"]) >= max(5, 0.7 * len(msgs))
+    if has_dt:
+        msgs = sorted([m for m in msgs if m["dt"]], key=lambda m: m["dt"])
+    cnt = Counter(m["name"] for m in msgs)
+    people = [n for n, _ in cnt.most_common(4)]
+    humans = [n for n in cnt if not is_ai(n)]
+    me = target if target in cnt else (max(humans, key=lambda n: cnt[n]) if humans else people[0])
+
+    # 내 발화를 '사람 앞 / AI 앞'으로 나눈다 (바로 앞·뒤 발화자 기준)
+    hu_ctx, ai_ctx = [], []
+    for i, m in enumerate(msgs):
+        if m["name"] != me or m["text"] in _SKIP_TEXT:
+            continue
+        nb = [msgs[j]["name"] for j in (i - 1, i + 1) if 0 <= j < len(msgs) and msgs[j]["name"] != me]
+        if kind == "chatku" or (nb and any(is_ai(x) for x in nb)):
+            ai_ctx.append(i)
+        else:
+            hu_ctx.append(i)
+    T = lambda idx: [msgs[i]["text"] for i in idx]  # noqa: E731
+    my_hu, my_ai = T(hu_ctx), T(ai_ctx)
+    my_all = my_hu + my_ai
+    slides = []
+
+    # 0) 대화 개요
+    ov = _tiles([("전체 메시지", f"{len(msgs)}개"), ("내 발화", f"{len(my_all)}개"), ("대화 상대", f"{max(len(cnt) - 1, 0)}명")])
+    if has_dt:
+        d0, d1 = msgs[0]["dt"].date(), msgs[-1]["dt"].date()
+        ov += f'<div class="ks-sub0">{_e(_kdate(d0))} ~ {_e(_kdate(d1))} · 분석 대상: {_e(me)}</div>'
+        ov += _cal_slide(msgs)
+        hrs = Counter(m["dt"].hour for m in msgs)
+        mxh, ph = max(hrs.values()), hrs.most_common(1)[0][0]
+        bars = "".join(f'<i style="height:{max(3, int(hrs.get(h, 0) / mxh * 100))}%;{"background:#5A4A10" if h == ph else ""}"></i>' for h in range(24))
+        ov += (
+            f'<div class="ks-card c-yellow"><div class="ks-h">대화한 시간대</div><div class="ks-hist">{bars}</div>'
+            '<div class="ks-ax"><span>밤 12시</span><span>오전 6시</span><span>낮 12시</span><span>저녁 6시</span></div>'
+            f'<div class="ks-sub">가장 활발한 시간 {_hour_label(ph)}</div></div>'
         )
-    return f'<div class="ks-card c-lav"><div class="ks-h">칼답률</div><div class="ks-podium">{boxes}</div><div class="ks-sub">1분 안에 보낸 답장 비율 · 상대 말에 얼마나 바로 반응하는지 보여줘요.</div></div>'
+    else:
+        ov += f'<div class="ks-sub0">분석 대상: {_e(me)} · 시각 정보가 없는 대화라 날짜·시간대 통계는 생략했어요.</div>'
+    slides.append(("대화 개요", ov))
 
+    # ① 관계 속 내 모습 → A
+    others = [n for n in humans if n != me and cnt[n] >= 3]
+    if len(my_hu) >= 8 and others:
+        rows = sorted(((l, _pct(sum(1 for t in my_hu if _hits(t, ws)), len(my_hu))) for l, ws in _REL), key=lambda x: -x[1])
+        body = _tag("연결고리 ①", "A", "인간관계 속 내 모습") + _card("lav", "관계적 자아 표현 (내 사람 대화 중 해당 말이 든 비율)", _hbars(rows) + f'<div class="ks-sub">{_NOTE}</div>')
+        # 상대별 말투
+        per = {}
+        for n in others[:3]:
+            tx = [msgs[i]["text"] for i in hu_ctx if i > 0 and msgs[i - 1]["name"] == n]
+            if len(tx) >= 5:
+                per[n] = _feat(tx)
+        if len(per) >= 2:
+            head = "".join(f"<span>{_e(n)}</span>" for n in per)
+            grid = ""
+            for lab, key, u in (("존댓말", "polite", "%"), ("ㅋㅋ·ㅠㅠ", "laugh", "%"), ("평균 글자수", "len", "자")):
+                grid += f'<div class="ks-gr" style="grid-template-columns:1.6fr repeat({len(per)},1fr)"><b>{lab}</b>' + "".join(f"<span>{f[key]}{u}</span>" for f in per.values()) + "</div>"
+            body += _card("pink", "상대에 따라 달라지는 내 말투", f'<div class="ks-gr ks-gh" style="grid-template-columns:1.6fr repeat({len(per)},1fr)"><b></b>{head}</div>{grid}<div class="ks-sub">상대별로 말투가 얼마나 다른지 보여줘요.</div>')
+        if has_dt:
+            starts, last = Counter(), None
+            for m in msgs:
+                if last is None or (m["dt"] - last) >= timedelta(hours=6):
+                    starts[m["name"]] += 1
+                last = m["dt"]
+            ts = sum(starts.values())
+            if ts >= 3:
+                body += _card("mint", "먼저 말을 거는 편인가", _hbars([(me, _pct(starts[me], ts))]) + '<div class="ks-sub">6시간 이상 쉰 뒤 먼저 시작한 대화의 비율 (주도성 단서)</div>')
+        slides.append(("관계 속 내 모습", body))
 
-def _hours_slide(msgs) -> str:
-    out = ""
-    per = Counter(m["dt"].date() for m in msgs)
-    bd, bc = per.most_common(1)[0]
-    out += f'<div class="ks-card c-peach"><div class="ks-h">메시지가 가장 많았던 날</div><div class="ks-num">{bc}<small>개 · {_e(_kdate(bd))}</small></div></div>'
-    days = sorted(per)
-    best = run = 1
-    gap = 0
-    for a, b in zip(days, days[1:]):
-        dd = (b - a).days
-        run = run + 1 if dd == 1 else 1
-        best = max(best, run)
-        gap = max(gap, dd - 1)
-    sm = f'<div class="ks-card c-mint"><div class="ks-h">최장 연속 대화</div><div class="ks-num">{best}<small>일</small></div></div>'
-    sm += f'<div class="ks-card c-pink"><div class="ks-h">가장 길었던 침묵</div><div class="ks-num">{gap}<small>일</small></div></div>'
-    out += f'<div class="ks-two">{sm}</div>'
-    hrs = Counter(m["dt"].hour for m in msgs)
-    mxh = max(hrs.values())
-    ph = hrs.most_common(1)[0][0]
-    bars = "".join(
-        f'<i style="height:{max(3, int(hrs.get(h, 0) / mxh * 100))}%;{"background:#5A4A10" if h == ph else ""}"></i>' for h in range(24)
-    )
-    night = sum(v for h, v in hrs.items() if h >= 22 or h < 5) / len(msgs)
-    out += (
-        f'<div class="ks-card c-yellow"><div class="ks-h">시간대별</div><div class="ks-hist">{bars}</div>'
-        '<div class="ks-ax"><span>밤 12시</span><span>오전 6시</span><span>낮 12시</span><span>저녁 6시</span></div>'
-        f'<div class="ks-sub">밤 10시~새벽 5시 {int(round(night * 100))}% · 가장 활발한 시간 {_hour_label(ph)}</div></div>'
-    )
-    return out
+    # ② AI 앞의 나 → B
+    if len(my_ai) >= 5:
+        fa = _feat(my_ai)
+        if len(my_hu) >= 5:
+            fh = _feat(my_hu)
+            grid = '<div class="ks-gr ks-gh"><b></b><span>사람 앞</span><span>AI 앞</span></div>'
+            for lab, key, u in (("평균 글자수", "len", "자"), ("존댓말", "polite", "%"), ("감정 표현이 든 말", "emo", "%"), ("질문하는 말", "ask", "%"), ("ㅋㅋ·ㅠㅠ", "laugh", "%")):
+                grid += f'<div class="ks-gr" style="grid-template-columns:1.6fr 1fr 1fr"><b>{lab}</b><span>{fh[key]}{u}</span><span>{fa[key]}{u}</span></div>'
+            only = sorted(set(w for t in my_ai for w in _tokens(t)) - set(w for t in my_hu for w in _tokens(t)), key=lambda w: -sum(t.count(w) for t in my_ai))[:5]
+            chips = f'<div class="ks-chips">{"".join(f"<span class=ks-chip>{_e(w)}</span>" for w in only)}</div>' if only else ""
+            body = _tag("연결고리 ②", "B", "사람 앞과 AI 앞의 표현 차이") + _card("mint", "같은 사람, 다른 말투", grid + f'<div class="ks-sub">{_NOTE}</div>')
+            if chips:
+                body += _card("yellow", "AI 앞에서만 꺼낸 말", chips + '<div class="ks-sub">사람과의 대화에는 나오지 않고 AI와의 대화에만 나온 단어예요.</div>')
+        else:
+            body = _tag("연결고리 ②", "B", "AI 앞의 내 모습") + _card(
+                "mint",
+                "AI에게 말하는 방식",
+                _tiles([("내 발화", f"{fa['n']}개"), ("평균 글자수", f"{fa['len']}자"), ("질문하는 말", f"{fa['ask']}%"), ("존댓말", f"{fa['polite']}%"), ("감정 표현", f"{fa['emo']}%")])
+                + '<div class="ks-sub">사람과의 대화도 함께 올리면 사람 앞의 나와 나란히 비교해 드려요.</div>',
+            )
+        slides.append(("AI 앞의 나", body))
 
+    # ⑤ 막힌 지점 → E  (AI 대화 위주, 없으면 전체)
+    pool = hu_ctx + ai_ctx if not ai_ctx else ai_ctx
+    pool = sorted(pool)
+    conf = [i for i in pool if _CONFUSED.search(msgs[i]["text"])]
+    if len(conf) >= 2:
+        # 혼란 신호를 3발화 이내로 이어지는 묶음으로 만들고, 묶음 직후 이해 표현이 나오면 해소, 아니면 미해소로 본다.
+        clusters, cur = [], []
+        for pos, idx in enumerate(pool):
+            if idx in conf:
+                if cur and pos - cur[-1] <= 3:
+                    cur.append(pos)
+                else:
+                    if cur:
+                        clusters.append(cur)
+                    cur = [pos]
+        if cur:
+            clusters.append(cur)
+        resolved = unresolved = 0
+        topics = Counter()
+        for cl in clusters:
+            nxt = pool[cl[-1] + 1] if cl[-1] + 1 < len(pool) else None
+            ok = nxt is not None and bool(_RESOLVED.search(msgs[nxt]["text"]))
+            if ok:
+                resolved += 1
+            elif len(cl) >= 2:
+                unresolved += 1
+                for q in range(max(cl[0] - 1, 0), cl[-1] + 1):
+                    topics.update(w for w in _tokens(msgs[pool[q]]["text"]) if not _CONFUSED.search(w))
+        tw = [w for w, c in topics.most_common(4) if c >= 2]
+        tiles = _tiles([("혼란 신호", f"{len(conf)}회"), ("이해로 이어짐", f"{resolved}번"), ("계속 되물음", f"{unresolved}번")])
+        chips = f'<div class="ks-chips">{"".join(f"<span class=ks-chip>{_e(w)}</span>" for w in tw)}</div><div class="ks-sub">되묻기가 이어진 대화에 자주 나온 단어 (주제 후보)</div>' if (tw and unresolved) else ""
+        body = _tag("연결고리 ⑤", "E", "못하는 것 후보") + _card("peach", "질문하다 막힌 순간", tiles + '<div class="ks-sub">“이해가 안 돼”, “다시 설명해 줘” 같은 신호를 센 값이에요. 질문 횟수만으로는 판단하지 않고, 되묻기가 계속된 경우만 후보로 봐요.</div>')
+        if chips:
+            body += _card("lav", "되묻기가 이어진 주제 후보", chips)
+        slides.append(("막힌 지점", body))
 
-def _words_slide(msgs, people, cnt, pcol) -> str:
-    out = ""
-    short = Counter(m["text"].strip() for m in msgs if 1 <= len(m["text"].strip()) <= 6 and m["text"].strip() not in _SKIP_TEXT and "\n" not in m["text"])
-    top = [(w, c) for w, c in short.most_common(3) if c >= 2]
-    if top:
-        li = "".join(f'<div class="ks-w">{_e(w)} <small>×{c}</small></div>' for w, c in top)
-        out += _card("peach", "말버릇", li)
-    wc = Counter(w for m in msgs if m["text"] not in _SKIP_TEXT for w in _tokens(m["text"]))
-    tw = [w for w, c in wc.most_common(5) if c >= 2]
-    if len(tw) >= 3:
-        li = "".join(f'<div class="ks-rk"><b>#{i + 1}</b>{_e(w)}</div>' for i, w in enumerate(tw))
-        out += _card("mint", "가장 많이 쓴 단어", li)
-    ec = Counter(ch for m in msgs for ch in _EMOJI.findall(m["text"]))
-    te = [c for c, _ in ec.most_common(3)]
-    if te:
-        out += _card("yellow", "가장 많이 쓴 이모지", f'<div class="ks-emo">{"".join(_e(c) for c in te)}</div>')
-    icon = Counter(m["name"] for m in msgs if m["text"].strip() in ("이모티콘", "(이모티콘)"))
-    ti = sum(icon.values())
-    if ti >= 3 and len(cnt) >= 2:
-        bars = "".join(_bar(n, icon[n] / ti, pcol[n]) for n in people)
-        out += _card("lav", "이모티콘", f'<div class="ks-num">{ti}<small>개</small></div>{bars}')
-    return out
+    # ③ 내면 욕망 단서 → C
+    if len(my_all) >= 8:
+        d = [t for t in my_all if _WANT_DIRECT.search(t)]
+        e_ = [t for t in my_all if _hits(t, _WANT_EMO)]
+        v = [t for t in my_all if _WANT_VALUE.search(t)]
+        if d or e_ or v:
+            body = _tag("연결고리 ③", "C", "내면 욕망") + _card("pink", "욕망이 드러나는 세 가지 말", _tiles([("직접 표현", f"{len(d)}회"), ("감정 반응", f"{len(e_)}회"), ("가치 강조·선택", f"{len(v)}회")]))
+            ex = [("직접 표현", d), ("감정 반응", e_), ("가치 강조·선택", v)]
+            rows = [(None, mask(lst_[0][:70])) for _, lst_ in ex if lst_]
+            if rows:
+                body += _card("beige", "예를 들면", bubbles([(me, t) for _, t in rows], {me: NAME_COLORS[0]}))
+        else:
+            body = ""
+        mz = sorted(((l, sum(1 for t in my_all if _hits(t, ws))) for l, ws in _MASLOW), key=lambda x: -x[1])
+        mz = [(l, c) for l, c in mz if c]
+        if mz:
+            body = (body or _tag("연결고리 ③", "C", "내면 욕망")) + _card("yellow", "어떤 욕구와 가까운 말이 많은가", _hbars(mz, "#E9A23B", "회") + f'<div class="ks-sub">매슬로 욕구 5단계의 단서 단어를 센 값이에요. {_NOTE}</div>')
+        if body:
+            slides.append(("내면 욕망 단서", body))
+
+    # ④ 반복 경향 → D  (맥락이 다르므로 따로)
+    cards = ""
+    for lab, tx, cls in (("사람과의 대화", my_hu, "lav"), ("AI와의 대화", my_ai, "mint")):
+        if len(tx) < 10:
+            continue
+        n = len(tx)
+        toks = sum(len(t.split()) for t in tx) or 1
+        first = sum(1 for t in tx for w in re.split(r"[\s,.!?~]+", t) if w in _I)
+        top = [w for w, c in Counter(w for t in tx for w in _tokens(t)).most_common(5) if c >= 2]
+        rows = [
+            ("긍정 정서어", round(sum(_hits(t, _POS) for t in tx) / n * 100)),
+            ("부정 정서어", round(sum(_hits(t, _NEG + _ANX) for t in tx) / n * 100)),
+            ("인과·성찰어", round(sum(_hits(t, _CAUSAL) for t in tx) / n * 100)),
+            ("불확실어", round(sum(_hits(t, _UNSURE) for t in tx) / n * 100)),
+            ("확신어", round(sum(_hits(t, _SURE) for t in tx) / n * 100)),
+        ]
+        inner = f'<div class="ks-chips">{"".join(f"<span class=ks-chip>{_e(w)}</span>" for w in top)}</div>' if top else ""
+        inner += f'<div class="ks-sub" style="margin:.6rem 0 .2rem">1인칭(나·내·저) 비율 {_pct(first, toks)}% · 발화 {n}개 기준, 메시지 100개당 횟수</div>' + _hbars(rows, "#4A7BD0", "회")
+        cards += _card(cls, f"{lab} 속 반복 경향", inner)
+    if cards:
+        slides.append(("반복 경향", _tag("연결고리 ④", "D", "반복되는 경향·성찰 포인트") + cards + f'<div class="ks-sub0">{_NOTE} 사람과의 대화와 AI와의 대화는 맥락이 달라 따로 보여줘요.</div>'))
+
+    return {"people": people, "slides": slides}
 
 
 # ───────────────────────── 채팅 말풍선 ─────────────────────────
@@ -583,6 +534,8 @@ CSS = """
 .ks-cal{overflow-x:auto}.ks-yr{color:#8A8AA0;font-weight:800;margin:.6rem 0 .3rem}
 .ks-cr{display:grid;grid-template-columns:2.2rem repeat(31,minmax(7px,1fr));gap:3px;align-items:center;margin:3px 0}
 .ks-cr span{color:#8A8AA0;font-size:.72rem;font-weight:800}.ks-cr i{aspect-ratio:1;border-radius:3px;background:#2A2F47;display:block}.ks-cr i.x{background:transparent}
+.ks-tag{background:#EAF0FB;color:#0D326F;border-radius:12px;padding:.5rem .8rem;font-size:.82rem;margin:.2rem 0 .4rem}.ks-tag b{color:#A40F16;margin-right:.4rem}.ks-tag span{display:block;opacity:.7;margin-top:.1rem}
+.ks-two3{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:.6rem;margin:.2rem 0 .6rem}.ks-tile{background:rgba(255,255,255,.55);border-radius:14px;padding:.7rem .5rem;text-align:center}.ks-tn{font-size:1.45rem;font-weight:900}.ks-tl{font-size:.76rem;opacity:.75;margin-top:.15rem}
 .ks-stack{display:flex}.ks-stack span{display:block;height:100%}
 .ks-key{display:flex;gap:.9rem;font-size:.78rem;font-weight:700;margin-top:.4rem;flex-wrap:wrap}.ks-key i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:.3rem}
 .ks-gr{display:grid;grid-template-columns:1.6fr repeat(3,1fr);gap:.3rem;padding:.4rem 0;border-bottom:1px solid rgba(0,0,0,.08);font-size:.9rem}
