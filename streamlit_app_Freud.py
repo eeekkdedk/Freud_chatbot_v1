@@ -872,15 +872,15 @@ def run_with_freud_quotes(text: str, target: str, keep: str):
             n = tick // 5
             em, line = WAIT_LINES[order[n % len(order)]]
             scene.markdown(
-                "<style>.kz{max-width:680px;margin:.6rem auto 0;border:1.5px solid #C0A353;border-radius:22px;overflow:hidden;"
+                "<style>.kz{max-width:420px;margin:.5rem auto 0;border:1.5px solid #C0A353;border-radius:22px;overflow:hidden;"
                 "background:#fff;box-shadow:0 8px 26px rgba(120,90,40,.2)}"
-                ".kz img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;object-position:50% 0%;"
+                ".kz img{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;object-position:50% 0%;"
                 "animation:kzin 5.2s ease-out both}"
                 "@keyframes kzin{0%{opacity:.25;transform:scale(1)}8%{opacity:1}100%{opacity:1;transform:scale(1.05)}}"
-                ".kz .cap{background:#fff;color:#1f1f24;text-align:center;font-weight:700;font-size:1.3rem;line-height:1.55;"
-                "padding:1.1rem 1.3rem 1.25rem;border-top:1.5px solid #E7DCC0;word-break:keep-all}"
-                ".kz .cap .em{display:block;font-size:2rem;line-height:1.2;margin-bottom:.25rem}"
-                ".kzt{text-align:center;color:#555;font-size:1rem;font-weight:600;margin-top:.7rem}</style>"
+                ".kz .cap{background:#fff;color:#1f1f24;text-align:center;font-weight:700;font-size:1.02rem;line-height:1.5;"
+                "padding:.8rem 1rem .9rem;border-top:1.5px solid #E7DCC0;word-break:keep-all}"
+                ".kz .cap .em{display:block;font-size:1.5rem;line-height:1.2;margin-bottom:.15rem}"
+                ".kzt{text-align:center;color:#555;font-size:.9rem;font-weight:600;margin-top:.7rem}</style>"
                 f'<div class="kz"><img alt="" src="{_wait_img(n % 4 + 1)}"><div class="cap"><span class="em">{em}</span>{e(line)}</div></div>',
                 unsafe_allow_html=True,
             )
