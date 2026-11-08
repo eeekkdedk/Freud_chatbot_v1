@@ -30,7 +30,14 @@ MIN_CHARS = 300
 DEMO_REPO_URL = "https://github.com/eeekkdedk/Freud_chatbot_v1/blob/main/assets/demo"
 MAX_CHARS = 60_000
 
-st.set_page_config(page_title="FREUD · 대화 속 무의식 분석", page_icon="🛋️", layout="centered")
+_HEAD_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "mascot_head.png")
+try:
+    from PIL import Image as _PILImage
+
+    _PAGE_ICON = _PILImage.open(_HEAD_PATH)
+except Exception:
+    _PAGE_ICON = "🛋️"
+st.set_page_config(page_title="FREUD · 대화 속 무의식 분석", page_icon=_PAGE_ICON, layout="centered")
 
 # ───────────────────────── 스타일 ─────────────────────────
 st.markdown(
@@ -102,8 +109,9 @@ html, body, [class*="css"], .stApp { font-family: 'Pretendard', -apple-system, s
 .kneed span { background:#EAF0FB; color:#0D326F; border-radius:999px; padding:.2rem .7rem; font-size:.82rem; font-weight:700; }
 .fnd h4 { font-size:1.02rem; color:#A40F16; margin:.1rem 0 .5rem; }
 .nav { display:flex; align-items:center; justify-content:space-between; padding:.2rem 0 .6rem; }
-.nav .logo { font-weight:800; letter-spacing:.3em; color:#A40F16; font-size:1.05rem; }
+.nav .logo { display:flex; align-items:center; gap:.55rem; font-weight:800; letter-spacing:.3em; color:#A40F16; font-size:1.05rem; }
 .ver { text-align:right; color:#c4c4c9; font-size:.62rem; letter-spacing:.02em; margin:-.2rem 0 .2rem; }
+.nav .nav-head { height:2rem; width:2rem; }
 .nav .pill { font-size:.72rem; color:#717171; border:1px solid #e3e3e6; border-radius:999px; padding:.2rem .7rem; }
 .lp-hero { text-align:center; padding:1.6rem 0 .6rem; }
 .lp-hero .couch { font-size:3.6rem; line-height:0; }
@@ -947,6 +955,18 @@ def _mascot_html() -> str:
     return "🛋️"
 
 
+@st.cache_data
+def _head_html() -> str:
+    """상단 바용 쿠로이트 머리 아이콘(assets/mascot_head.png). 없으면 빈 문자열."""
+    import base64
+
+    try:
+        with open(_HEAD_PATH, "rb") as fh:
+            return f'<img class="nav-head" alt="" src="data:image/png;base64,{base64.b64encode(fh.read()).decode()}">'
+    except Exception:
+        return ""
+
+
 # 입력 종류 아이콘: assets/icons/<이름>.svg|png 파일이 있으면 그것을 쓰고, 없으면 아래 기본 일러스트를 쓴다.
 # (공식 로고를 쓰려면 각 서비스의 브랜드 가이드에서 받은 파일을 kakao / sns / chatbot 이름으로 넣어 두면 자동 적용)
 _ICONS = {
@@ -1034,14 +1054,14 @@ def _version_label() -> str:
 def landing():
     st.markdown(
         """
-<div class="nav"><div class="logo">F R E U D</div><div class="pill">대화 속 무의식 분석 · 베타</div></div>
+<div class="nav"><div class="logo">{HEAD}F R E U D</div><div class="pill">대화 속 무의식 분석 · 베타</div></div>
 <div class="ver">{VERSION}</div>
 <div class="lp-hero">
 <div class="couch">{MASCOT}</div>
 <h1>대화 올려 봐요.<br><em>진짜 마음</em>이 뭔지 쿠로이트가 알려줄게요.</h1>
 <div class="sub">카톡·SNS·챗봇 대화를 읽고<br>말버릇과 방어기제, 반복되는 패턴을 찾아<br>나에게 맞는 진로의 실마리까지 제안해요.</div>
 </div>
-""".replace("{MASCOT}", _mascot_html()).replace("{VERSION}", _version_label()),
+""".replace("{MASCOT}", _mascot_html()).replace("{VERSION}", _version_label()).replace("{HEAD}", _head_html()),
         unsafe_allow_html=True,
     )
     if st.button("🛋️ 지금 해 보기", type="primary", use_container_width=True, key="cta_top"):
