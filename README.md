@@ -4,6 +4,7 @@
 
 미래교육 AI 문제해결 챌린지 출품작 (팀 표범조).
 **Live:** https://freudchatbot.streamlit.app
+**챗쿠 챗봇 참고 자료(프롬프트·설정 화면·근거 논문):** [`docs/chatku/`](docs/chatku/README.md)
 
 ---
 
@@ -128,6 +129,8 @@ streamlit run streamlit_app_Freud.py
 │   ├── guides/              # 카카오톡·인스타그램·챗쿠 내보내기 안내 이미지
 │   ├── icons/               # 입력 탭 아이콘
 │   └── demo/                # 체험용 가상 대화 (kakao.csv, instagram.zip, chatku.zip)
+├── docs/
+│   └── chatku/              # 챗쿠 챗봇 참고 자료 (서비스 동작과 무관)
 └── tools/
     └── vectorize_mascot.py  # 캐릭터 PNG → SVG 변환 스크립트
 ```
